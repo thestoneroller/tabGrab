@@ -1,0 +1,47 @@
+@import 'tailwindcss';
+
+/* Custom Scrollbar for #tabs-container */
+#tabs-container::-webkit-scrollbar {
+  width: 5px; /* Make scrollbar thinner */
+  height: 5px; /* For horizontal scrollbar if ever needed */
+}
+
+#tabs-container::-webkit-scrollbar-track {
+  background: transparent; /* Remove track background */
+}
+
+#tabs-container::-webkit-scrollbar-thumb {
+  background-color: #f59e0b; /* amber-500 */
+  border-radius: 20px; /* Rounded thumb */
+  border: none; /* No border around thumb */
+}
+
+#tabs-container::-webkit-scrollbar-thumb:hover {
+  background-color: #d97706; /* amber-600 on hover */
+}
+
+/* Firefox Scrollbar Styles */
+#tabs-container {
+  scrollbar-width: thin; /* Use thin scrollbar */
+  scrollbar-color: #f59e0b transparent; /* thumb color, track color */
+}
+
+/* --- Indeterminate Checkbox Style --- */
+/* Style for the visual checkbox div when the actual checkbox is indeterminate */
+#select-all-visual.indeterminate {
+  /* Add background and border directly here */
+  background-color: #f59e0b; /* amber-500 */
+  border-color: #f59e0b; /* amber-500 */
+}
+
+#select-all-visual.indeterminate::after {
+  content: ''; /* Ensure content is set */
+  position: absolute;
+  left: 3px; /* Center the line */
+  top: 7px; /* Center the line */
+  width: 8px; /* Width of the line */
+  height: 2px; /* Thickness of the line */
+  background-color: white; /* Line color */
+  transform: rotate(0deg); /* Remove checkmark rotation */
+  border: none; /* Remove checkmark border */
+}

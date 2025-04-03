@@ -1,0 +1,26 @@
+{
+  "name": "tab-grabber",
+  "description": "Copy URLs from multiple tabs at once",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "wxt",
+    "dev:firefox": "wxt -b firefox",
+    "build": "wxt build",
+    "build:firefox": "wxt build -b firefox",
+    "zip": "wxt zip",
+    "zip:firefox": "wxt zip -b firefox",
+    "compile": "tsc --noEmit",
+    "postinstall": "wxt prepare",
+    "done": "pnpm run build && pnpm run zip && pnpm run build:firefox && pnpm run zip:firefox"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "wxt": "^0.20.0"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "^4.1.1",
+    "tailwindcss": "^4.1.1"
+  }
+}
