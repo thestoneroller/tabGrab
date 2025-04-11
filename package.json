@@ -1,5 +1,5 @@
 {
-  "name": "tab-grabber",
+  "name": "Tab Grab",
   "description": "Copy URLs from multiple tabs at once",
   "private": true,
   "version": "1.0.0",
@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.1",
+    "rollup-obfuscator": "^4.1.1",
     "tailwindcss": "^4.1.1"
   }
 }

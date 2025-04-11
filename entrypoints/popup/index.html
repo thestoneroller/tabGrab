@@ -3,50 +3,134 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tab Manager</title>
+    <title>TabGrab</title>
     <meta name="manifest.type" content="browser_action" />
     <link rel="stylesheet" href="../../assets/tailwind.css" />
   </head>
   <body
-    class="bg-neutral-100 dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100"
+    class="bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100"
   >
-    <div id="app" class="w-[400px] max-h-[480px] flex flex-col p-4">
+    <div id="app" class="w-[400px] max-h-[516px] flex flex-col p-4">
       <header class="flex justify-between items-center mb-4">
-        <h1 class="text-xl font-semibold">Tab Manager</h1>
-        <button
-          id="theme-toggle"
-          aria-label="Toggle dark mode"
-          class="w-9 h-9 flex items-center justify-center rounded-full bg-neutral-200 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-all duration-200"
-        >
-          <svg
-            class="sun-icon hidden stroke-neutral-900 dark:stroke-neutral-100 w-[18px] h-[18px]"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
+        <div class="flex items-center gap-2">
+          <div class="bg-indigo-500 rounded-md p-0.5">
+            <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+            <!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+            <svg
+              width="2160"
+              height="2160"
+              viewBox="0 0 2160 2160"
+              version="1.1"
+              id="svg1"
+              class="w-5 h-5"
+              xml:space="preserve"
+              xmlns="http://www.w3.org/2000/svg"
+              xmlns:svg="http://www.w3.org/2000/svg"
+            >
+              <defs id="defs1" />
+              <g id="layer1">
+                <g
+                  id="g9"
+                  transform="matrix(1.3088488,0,0,1.3088488,-538.50529,-83.760894)"
+                  style="display: inline"
+                >
+                  <g
+                    style="color: #000000; fill: none; stroke-width: 1"
+                    id="g5"
+                    transform="matrix(34.027314,0,0,37.862316,1094.539,1203.8226)"
+                  >
+                    <g id="g4" transform="translate(-11.320535,-16.280127)">
+                      <path
+                        d="M 22,8 H 15.5 M 9,4 v 4 h 6.5 m 0,0 V 4"
+                        stroke="#000000"
+                        stroke-width="1"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        id="path3"
+                        style="stroke: #ffffff; stroke-opacity: 1"
+                      />
+                      <path
+                        d="M 2,17.7143 V 6.28571 C 2,5.02335 2.99492,4 4.22222,4 H 19.7778 C 21.0051,4 22,5.02335 22,6.28571 V 17.7143 C 22,18.9767 21.0051,20 19.7778,20 H 4.22222 C 2.99492,20 2,18.9767 2,17.7143 Z"
+                        stroke="#000000"
+                        stroke-width="1"
+                        id="path4"
+                        style="stroke: #ffffff; stroke-opacity: 1"
+                      />
+                    </g>
+                  </g>
+                  <g
+                    style="color: #000000; fill: none; stroke-width: 1"
+                    id="g1"
+                    transform="matrix(34.027314,0,0,37.862316,1315.8942,898.58547)"
+                  >
+                    <g id="g2" transform="translate(-11.320535,-16.280127)">
+                      <path
+                        d="M 22,8 H 15.5 M 9,4 v 4 h 6.5 m 0,0 V 4"
+                        stroke="#000000"
+                        stroke-width="1"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        id="path1-0"
+                        style="stroke: #ffffff; stroke-opacity: 1"
+                      />
+                      <path
+                        d="M 2.4849046,12.007271 V 6.28571 C 2.4849046,5.02335 3.4798246,4 4.7071246,4 H 20.262705 c 1.2273,0 2.2222,1.02335 2.2222,2.28571 V 17.7143 c 0,1.2624 -0.9949,2.2857 -2.2222,2.2857 h -4.722789"
+                        stroke="#000000"
+                        stroke-width="1"
+                        id="path2"
+                        style="stroke: #ffffff; stroke-opacity: 1"
+                      />
+                    </g>
+                  </g>
+                </g>
+              </g>
+            </svg>
+          </div>
+          <p class="text-xl font-redaction tracking-wider">
+            Tab<span class="font-redaction italic">Grab</span>
+          </p>
+        </div>
+        <div class="flex items-center gap-2 relative">
+          <button
+            id="theme-toggle-button"
+            aria-label="Toggle dark mode"
+            class="w-8 h-8 cursor-pointer flex items-center justify-center rounded-full hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors duration-200"
           >
-            <circle cx="12" cy="12" r="5"></circle>
-            <line x1="12" y1="1" x2="12" y2="3"></line>
-            <line x1="12" y1="21" x2="12" y2="23"></line>
-            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-            <line x1="1" y1="12" x2="3" y2="12"></line>
-            <line x1="21" y1="12" x2="23" y2="12"></line>
-            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-          </svg>
-          <svg
-            class="moon-icon stroke-neutral-900 dark:stroke-neutral-100 w-[18px] h-[18px]"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-          </svg>
-        </button>
+            <!-- Sun Icon -->
+            <svg
+              class="sun-icon hidden stroke-neutral-900 dark:stroke-neutral-100 w-5 h-5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="5"></circle>
+              <line x1="12" y1="1" x2="12" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="23"></line>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+              <line x1="1" y1="12" x2="3" y2="12"></line>
+              <line x1="21" y1="12" x2="23" y2="12"></line>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+            <!-- Moon Icon -->
+            <svg
+              class="moon-icon cursor-pointer stroke-neutral-900 dark:stroke-neutral-100 w-5 h-5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+          </button>
+        </div>
       </header>
 
       <div class="mb-4 relative">
@@ -54,10 +138,10 @@
           type="text"
           id="search-input"
           placeholder="Search tabs by title or URL..."
-          class="w-full px-3 py-2 pl-8 text-sm bg-neutral-200 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-xl focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/20 text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 dark:placeholder-neutral-400"
+          class="w-full px-4 py-2 pl-8 text-sm bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 dark:placeholder-neutral-400"
         />
         <svg
-          class="absolute left-2.5 top-2.5 w-4 h-4 text-neutral-500 dark:text-neutral-400"
+          class="absolute left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-neutral-500 dark:text-neutral-400"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -70,150 +154,258 @@
         </svg>
       </div>
 
-      <div class="flex justify-between items-center mb-4">
-        <div class="flex justify-between items-center w-full gap-2">
-          <div class="flex items-center gap-2">
-            <div class="flex items-center">
-              <input
-                type="checkbox"
-                id="select-all-checkbox"
-                class="sr-only peer"
-              />
-              <div
-                id="select-all-visual"
-                class="w-4 h-4 border-2 border-neutral-300 dark:border-neutral-700 rounded peer-checked:bg-amber-500 peer-checked:border-amber-500 relative peer-checked:after:content-[''] peer-checked:after:absolute peer-checked:after:left-[4px] peer-checked:after:top-[0px] peer-checked:after:w-[5px] peer-checked:after:h-[9px] peer-checked:after:border-white peer-checked:after:border-r-2 peer-checked:after:border-b-2 peer-checked:after:rotate-45 cursor-pointer"
-              ></div>
-              <label
-                for="select-all-checkbox"
-                class="ml-2 text-sm cursor-pointer select-none text-neutral-900 dark:text-neutral-100"
-              >
-                Select All
-              </label>
-            </div>
-            <div
-              class="text-xs px-2 py-0.5 bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400 rounded-full"
+      <div class="flex items-center w-full justify-between mb-4 relative">
+        <div class="flex items-centergap-2">
+          <button
+            id="filter-all"
+            class="filter-button cursor-pointer flex items-center gap-2 px-3 py-1 text-sm rounded-lg transition-colors duration-200"
+          >
+            All Tabs
+            <span
+              id="count-all"
+              class="bg-neutral-200 dark:bg-neutral-700 text-xs font-medium px-2 py-0.5 rounded-full"
+              >0</span
             >
-              <span id="selection-count">0</span>
-            </div>
-          </div>
+          </button>
+          <button
+            id="filter-pinned"
+            class="filter-button cursor-pointer flex items-center gap-2 px-3 py-1 text-sm rounded-lg transition-colors duration-200"
+          >
+            Pinned
+            <span
+              id="count-pinned"
+              class="bg-neutral-200 dark:bg-neutral-700 text-xs font-medium px-2 py-0.5 rounded-full"
+              >0</span
+            >
+          </button>
+        </div>
+        <button
+          id="filter-button"
+          aria-label="Open filter menu"
+          class="w-8 h-8 cursor-pointer flex items-center justify-center rounded-full hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors duration-200"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="w-5 h-5 stroke-neutral-900 dark:stroke-neutral-100"
+            fill="currentColor"
+            viewBox="0 0 256 256"
+          >
+            <path
+              d="M40,88H73a32,32,0,0,0,62,0h81a8,8,0,0,0,0-16H135a32,32,0,0,0-62,0H40a8,8,0,0,0,0,16Zm64-24A16,16,0,1,1,88,80,16,16,0,0,1,104,64ZM216,168H199a32,32,0,0,0-62,0H40a8,8,0,0,0,0,16h97a32,32,0,0,0,62,0h17a8,8,0,0,0,0-16Zm-48,24a16,16,0,1,1,16-16A16,16,0,0,1,168,192Z"
+            ></path>
+          </svg>
+        </button>
 
-          <div class="flex self-end relative">
-            <button
-              id="copy-selected"
-              disabled
-              class="px-2.5 py-1.5 text-xs border border-amber-500 text-amber-300 rounded-l-xl flex items-center gap-2 hover:text-white hover:bg-amber-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                width="12"
-                height="12"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
+        <div
+          id="filter-menu"
+          class="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-600 rounded-xl shadow-lg z-10 hidden"
+          role="menu"
+          aria-orientation="vertical"
+          aria-labelledby="filter-button"
+        >
+          <div class="p-4 space-y-4">
+            <div class="flex items-center justify-between">
+              <label
+                for="group-domain-toggle"
+                class="cursor-pointer select-none text-sm text-neutral-900 dark:text-neutral-100"
+                >Group Domains</label
               >
-                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                <path
-                  d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
-                ></path>
-              </svg>
-              <span id="copy-button-text">Copy Selected</span>
-            </button>
-            <button
-              id="copy-format-toggle"
-              aria-haspopup="true"
-              aria-expanded="false"
-              disabled
-              class="px-1.5 py-1.5 text-xs border-y border-r border-amber-500 text-amber-300 rounded-r-xl flex items-center hover:text-white hover:bg-amber-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                <path
-                  fill-rule="evenodd"
-                  d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                  clip-rule="evenodd"
-                />
-              </svg>
-            </button>
+              <button
+                type="button"
+                id="group-domain-toggle"
+                class="relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none bg-neutral-200 dark:bg-neutral-700"
+                role="switch"
+                aria-checked="false"
+              >
+                <span class="sr-only">Group by domain</span>
+                <span
+                  aria-hidden="true"
+                  class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out translate-x-0"
+                ></span>
+              </button>
+            </div>
             <div
-              id="copy-format-menu"
-              class="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-xl shadow-lg z-10 hidden"
-              role="menu"
-              aria-orientation="vertical"
-              aria-labelledby="copy-format-toggle"
+              id="hide-pinned-setting"
+              class="flex items-center justify-between opacity-100 transition-opacity duration-200"
             >
-              <div class="py-1" role="none">
-                <a
-                  href="#"
-                  class="copy-format-item flex justify-between items-center px-4 py-2 text-sm text-neutral-900 dark:text-neutral-100 hover:bg-amber-100 dark:hover:bg-amber-900/50"
-                  role="menuitem"
-                  data-format="plain"
-                  >Plain URLs
-                  <span class="format-checkmark hidden ml-2">
-                    <svg
-                      class="w-4 h-4 text-amber-600"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fill-rule="evenodd"
-                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                        clip-rule="evenodd"
-                      ></path>
-                    </svg>
-                  </span>
-                </a>
-                <a
-                  href="#"
-                  class="copy-format-item flex justify-between items-center px-4 py-2 text-sm text-neutral-900 dark:text-neutral-100 hover:bg-amber-100 dark:hover:bg-amber-900/50"
-                  role="menuitem"
-                  data-format="markdown"
-                  >Markdown List
-                  <span class="format-checkmark hidden ml-2">
-                    <svg
-                      class="w-4 h-4 text-amber-600"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fill-rule="evenodd"
-                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                        clip-rule="evenodd"
-                      ></path>
-                    </svg>
-                  </span>
-                </a>
-                <a
-                  href="#"
-                  class="copy-format-item flex justify-between items-center px-4 py-2 text-sm text-neutral-900 dark:text-neutral-100 hover:bg-amber-100 dark:hover:bg-amber-900/50"
-                  role="menuitem"
-                  data-format="json"
-                  >JSON Array
-                  <span class="format-checkmark hidden ml-2">
-                    <svg
-                      class="w-4 h-4 text-amber-600"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fill-rule="evenodd"
-                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                        clip-rule="evenodd"
-                      ></path>
-                    </svg>
-                  </span>
-                </a>
-              </div>
+              <label
+                for="hide-pinned-toggle"
+                id="hide-pinned-label"
+                class="cursor-pointer select-none text-sm text-neutral-900 dark:text-neutral-100"
+              >
+                Hide Pinned
+              </label>
+              <button
+                type="button"
+                id="hide-pinned-toggle"
+                class="relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none bg-neutral-200 dark:bg-neutral-700"
+                role="switch"
+                aria-checked="false"
+              >
+                <span class="sr-only">Hide Pinned Tabs</span>
+                <span
+                  aria-hidden="true"
+                  class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out translate-x-0"
+                ></span>
+              </button>
             </div>
           </div>
         </div>
       </div>
 
+      <div class="flex justify-between items-center mb-4 text-sm">
+        <div class="flex items-center gap-4">
+          <div class="flex items-center">
+            <input
+              type="checkbox"
+              id="select-all-checkbox"
+              class="sr-only peer"
+            />
+            <div
+              id="select-all-visual"
+              class="w-4 h-4 border-2 border-neutral-300 dark:border-neutral-700 rounded peer-checked:bg-indigo-500 peer-checked:border-indigo-500 relative peer-checked:after:content-[''] peer-checked:after:absolute peer-checked:after:left-[4px] peer-checked:after:top-[0px] peer-checked:after:w-[5px] peer-checked:after:h-[9px] peer-checked:after:border-white peer-checked:after:border-r-2 peer-checked:after:border-b-2 peer-checked:after:rotate-45 cursor-pointer"
+            ></div>
+            <label
+              for="select-all-checkbox"
+              class="ml-2 text-sm cursor-pointer select-none text-neutral-900 dark:text-neutral-100"
+            >
+              Select All
+            </label>
+          </div>
+        </div>
+        <div
+          class="text-xs px-2 py-1 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 rounded-full"
+        >
+          <span id="selection-count">0</span> selected
+        </div>
+      </div>
+
       <div
         id="tabs-container"
-        class="flex-1 overflow-y-auto pr-1 space-y-2 max-h-[300px]"
+        class="flex-1 overflow-y-auto pr-2 space-y-2 mb-4"
       ></div>
+
+      <!-- Footer Actions -->
+      <footer class="flex justify-end items-center">
+        <!-- Integrated Copy Button Group -->
+        <div class="flex relative w-full justify-center">
+          <!-- Main Copy Action Button -->
+          <button
+            id="copy-selected"
+            disabled
+            class="px-4 py-2 w-full text-sm border justify-center border-indigo-500 bg-indigo-500 text-white rounded-l-lg flex items-center gap-2 hover:bg-indigo-600 dark:hover:bg-indigo-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-indigo-300 dark:disabled:bg-indigo-500 disabled:border-indigo-400 dark:disabled:border-indigo-600"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path
+                d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
+              ></path>
+            </svg>
+            <span id="copy-button-text" class="text-center">Copy URLs</span>
+          </button>
+          <!-- Dropdown Toggle Button -->
+          <button
+            id="copy-format-toggle"
+            aria-haspopup="true"
+            aria-expanded="false"
+            disabled
+            class="px-2 py-2 text-sm border-y border-r border-indigo-500 bg-indigo-500 text-white rounded-r-lg flex items-center hover:bg-indigo-600 dark:hover:bg-indigo-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-indigo-300 dark:disabled:bg-indigo-500 disabled:border-indigo-400 dark:disabled:border-indigo-600"
+          >
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path
+                fill-rule="evenodd"
+                d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                clip-rule="evenodd"
+              />
+            </svg>
+          </button>
+          <!-- Dropdown Menu -->
+          <div
+            id="copy-format-menu"
+            class="absolute right-0 bottom-full mb-2 w-48 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-600 rounded-xl shadow-lg z-10 hidden"
+            role="menu"
+            aria-orientation="vertical"
+            aria-labelledby="copy-format-toggle"
+          >
+            <div role="none" class="py-2">
+              <a
+                href="#"
+                class="copy-format-item flex justify-between items-center px-4 py-2 text-sm text-neutral-900 dark:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-700/50"
+                role="menuitem"
+                data-format="plain"
+              >
+                Plain URLs
+                <span class="format-checkmark hidden ml-2">
+                  <svg
+                    class="w-4 h-4 text-indigo-600"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fill-rule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clip-rule="evenodd"
+                    ></path>
+                  </svg>
+                </span>
+              </a>
+              <a
+                href="#"
+                class="copy-format-item flex justify-between items-center px-4 py-2 text-sm text-neutral-900 dark:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-700/50"
+                role="menuitem"
+                data-format="markdown"
+              >
+                Markdown List
+                <span class="format-checkmark hidden ml-2">
+                  <svg
+                    class="w-4 h-4 text-indigo-600"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fill-rule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clip-rule="evenodd"
+                    ></path>
+                  </svg>
+                </span>
+              </a>
+              <a
+                href="#"
+                class="copy-format-item flex justify-between items-center px-4 py-2 text-sm text-neutral-900 dark:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-700/50"
+                role="menuitem"
+                data-format="json"
+              >
+                JSON Array
+                <span class="format-checkmark hidden ml-2">
+                  <svg
+                    class="w-4 h-4 text-indigo-600"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fill-rule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clip-rule="evenodd"
+                    ></path>
+                  </svg>
+                </span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
+
     <script type="module" src="./main.ts"></script>
   </body>
 </html>

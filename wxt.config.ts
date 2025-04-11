@@ -1,23 +1,23 @@
 import tailwindcss from '@tailwindcss/vite';
+import { obfuscator } from 'rollup-obfuscator';
 import { defineConfig } from 'wxt';
 
 // See https://wxt.dev/api/config.html
 export default defineConfig({
-  // extensionApi: 'chrome',
   manifest: {
-    permissions: ['tabs', 'storage', 'activeTab'],
+    permissions: ['tabs'],
     browser_specific_settings: {
       gecko: {
-        id: 'tabs-grabber@example.com',
+        id: 'tab-grab@extension.com',
       },
     },
   },
   vite: () => ({
-    plugins: [tailwindcss() as any],
+    plugins: [tailwindcss() as any, obfuscator()],
   }),
-  // webExt: {
-  //   binaries: {
-  //     firefox: 'firefoxdeveloperedition',
-  //   },
-  // },
+  webExt: {
+    binaries: {
+      firefox: 'firefoxdeveloperedition',
+    },
+  },
 });

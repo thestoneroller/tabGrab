@@ -4,7 +4,7 @@ interface TabItem {
   url: string;
   favIconUrl?: string;
   selected: boolean;
-  active: boolean;
+  pinned: boolean;
 }
 
 // State management
@@ -14,51 +14,94 @@ let isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
 let selectedCopyFormat: 'plain' | 'markdown' | 'json' = 'plain'; // Default format
 let lastClickedTabId: number | null = null; // Add this line
 let shiftNotificationShown = false; // Add this flag
+let activeFilter: 'all' | 'pinned' = 'all'; // Removed 'active' from filter types
+let isGroupingEnabled = false; // New state for grouping
+let isHidePinnedEnabled = false; // New state for hiding pinned tabs
 
 // DOM Elements
 const searchInput = document.getElementById('search-input') as HTMLInputElement;
 const tabsContainer = document.getElementById(
   'tabs-container'
 ) as HTMLDivElement;
-const themeToggle = document.getElementById(
-  'theme-toggle'
-) as HTMLButtonElement;
-const copySelectedBtn = document.getElementById(
-  'copy-selected'
+const themeToggleButton = document.getElementById(
+  'theme-toggle-button'
 ) as HTMLButtonElement;
 const selectAllCheckbox = document.getElementById(
   'select-all-checkbox'
 ) as HTMLInputElement;
+const selectAllVisual = document.getElementById(
+  'select-all-visual'
+) as HTMLDivElement;
 const selectionCount = document.getElementById(
   'selection-count'
 ) as HTMLSpanElement;
-const sunIcon = document.querySelector('.sun-icon') as SVGElement;
-const moonIcon = document.querySelector('.moon-icon') as SVGElement;
+const headerTabCountBadge = document.getElementById(
+  'tab-count-badge'
+) as HTMLSpanElement;
+
+// Hide Pinned Elements
+const hidePinnedSection = document.getElementById(
+  'hide-pinned-section'
+) as HTMLDivElement;
+const hidePinnedToggle = document.getElementById(
+  'hide-pinned-toggle'
+) as HTMLButtonElement;
+
+const groupDomainToggle = document.getElementById(
+  'group-domain-toggle'
+) as HTMLButtonElement;
+
+// Reverted Copy Button Elements
+const copySelectedBtn = document.getElementById(
+  'copy-selected'
+) as HTMLButtonElement; // Main action button
 const copyFormatToggle = document.getElementById(
   'copy-format-toggle'
-) as HTMLButtonElement;
+) as HTMLButtonElement; // Dropdown toggle
 const copyFormatMenu = document.getElementById(
   'copy-format-menu'
-) as HTMLDivElement;
+) as HTMLDivElement; // Dropdown menu
 const copyButtonText = document.getElementById(
   'copy-button-text'
-) as HTMLSpanElement; // Get span for button text
+) as HTMLSpanElement; // Text inside main button
 
-// Initialize the app
+// Filter Buttons & Counts
+const filterButtonAll = document.getElementById(
+  'filter-all'
+) as HTMLButtonElement;
+const filterButtonPinned = document.getElementById(
+  'filter-pinned'
+) as HTMLButtonElement;
+const countAll = document.getElementById('count-all') as HTMLSpanElement;
+const countPinned = document.getElementById('count-pinned') as HTMLSpanElement;
+const filterButtons = [filterButtonAll, filterButtonPinned];
+
+// Filter Dropdown Elements
+const filterButton = document.getElementById(
+  'filter-button'
+) as HTMLButtonElement;
+const filterMenu = document.getElementById('filter-menu') as HTMLDivElement;
+const hidePinnedSettingContainer = document.getElementById(
+  'hide-pinned-setting'
+) as HTMLDivElement;
+const hidePinnedLabel = document.getElementById(
+  'hide-pinned-label'
+) as HTMLLabelElement;
+
 async function init() {
-  // Set initial theme based on system preference or saved preference
-  // You might want to save the theme preference in storage
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  // Example: const savedTheme = await browser.storage.local.get('theme');
-  // isDarkMode = savedTheme.theme === 'dark' || (!savedTheme.theme && prefersDark);
-  isDarkMode = prefersDark; // Simplified for now
+
+  isDarkMode = prefersDark;
   setTheme(isDarkMode);
 
   // Load tabs
   await loadTabs();
 
-  // Set initial visual state for the dropdown
-  updateFormatMenuVisuals();
+  // Update counts initially
+  updateFilterCounts();
+  updateHeaderCount();
+  applyFilterStyles();
+  updateFormatMenuVisuals(); // Restore dropdown visual update
 
   // Set up event listeners
   setupEventListeners();
@@ -74,12 +117,113 @@ async function loadTabs() {
     url: tab.url || '',
     favIconUrl: tab.favIconUrl || '',
     selected: false,
-    active: tab.active,
+    pinned: tab.pinned,
   }));
 
-  filteredTabs = [...tabs];
-  renderTabs();
+  // Apply current filters and render
+  applyFiltersAndRender();
+
+  // Update counts based on the *full* tab list
+  updateFilterCounts();
+  updateHeaderCount();
+
+  // Update selection states based on potentially filtered view
   updateSelectionCount();
+  updateSelectAllCheckbox();
+  // Initial visibility update for hide-pinned section
+  updateHidePinnedVisibility();
+}
+
+// New function to update the main header tab count
+function updateHeaderCount() {
+  if (headerTabCountBadge) {
+    headerTabCountBadge.textContent = tabs.length.toString();
+  }
+}
+
+// New function to update counts on filter buttons
+function updateFilterCounts() {
+  if (countAll) countAll.textContent = tabs.length.toString();
+  if (countPinned)
+    countPinned.textContent = tabs.filter((t) => t.pinned).length.toString();
+}
+
+// New function to apply visual styles to filter buttons
+function applyFilterStyles() {
+  const activeClasses = [
+    'bg-indigo-100',
+    'dark:bg-indigo-900/50',
+    'text-indigo-700',
+    'dark:text-indigo-300',
+  ];
+  const inactiveClasses = [
+    'text-neutral-700',
+    'dark:text-neutral-300',
+    'hover:bg-neutral-100',
+    'dark:hover:bg-neutral-800',
+  ];
+  const activeCountClasses = [
+    'bg-indigo-200',
+    'dark:bg-indigo-700/60',
+    'text-indigo-800',
+    'dark:text-indigo-200',
+  ];
+  const inactiveCountClasses = [
+    'bg-neutral-200',
+    'dark:bg-neutral-700',
+    'text-neutral-800',
+    'dark:text-neutral-200',
+  ];
+
+  filterButtons.forEach((button) => {
+    const countBadge = button.querySelector('span');
+    const filterType = button.id.replace('filter-', '');
+
+    if (filterType === activeFilter) {
+      button.classList.add(...activeClasses);
+      button.classList.remove(...inactiveClasses);
+      if (countBadge) {
+        countBadge.classList.add(...activeCountClasses);
+        countBadge.classList.remove(...inactiveCountClasses);
+      }
+    } else {
+      button.classList.add(...inactiveClasses);
+      button.classList.remove(...activeClasses);
+      if (countBadge) {
+        countBadge.classList.add(...inactiveCountClasses);
+        countBadge.classList.remove(...activeCountClasses);
+      }
+    }
+  });
+}
+
+// Central function to handle filtering and rendering
+function applyFiltersAndRender() {
+  const query = searchInput.value.toLowerCase();
+
+  // Update visibility of the hide pinned section first
+  updateHidePinnedVisibility();
+
+  let baseFiltered = tabs;
+  if (activeFilter === 'pinned') {
+    baseFiltered = tabs.filter((tab) => tab.pinned);
+  } else if (activeFilter === 'all' && isHidePinnedEnabled) {
+    // Apply 'Hide Pinned' only when 'All' is active and checkbox is checked
+    baseFiltered = tabs.filter((tab) => !tab.pinned);
+  }
+
+  if (query) {
+    filteredTabs = baseFiltered.filter(
+      (tab) =>
+        tab.title.toLowerCase().includes(query) ||
+        tab.url.toLowerCase().includes(query)
+    );
+  } else {
+    filteredTabs = [...baseFiltered];
+  }
+
+  renderTabs();
+
   updateSelectAllCheckbox();
 }
 
@@ -88,127 +232,336 @@ function renderTabs() {
   tabsContainer.innerHTML = '';
 
   if (filteredTabs.length === 0) {
-    tabsContainer.innerHTML = `
-      <div class="flex flex-col items-center justify-center py-8 text-neutral-500 dark:text-neutral-400">
-        <svg class="w-10 h-10 mb-2 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-          <line x1="12" y1="9" x2="12" y2="13"></line>
-          <line x1="12" y1="17" x2="12.01" y2="17"></line>
-        </svg>
-        No tabs found matching your search
-      </div>
-    `;
+    const noTabsContainer = document.createElement('div');
+    noTabsContainer.className =
+      'flex flex-col items-center justify-center py-8 text-neutral-500 dark:text-neutral-400';
+
+    const warningIcon = document.createElementNS(
+      'http://www.w3.org/2000/svg',
+      'svg'
+    );
+    warningIcon.setAttribute('class', 'w-10 h-10 mb-2 opacity-70');
+    warningIcon.setAttribute('viewBox', '0 0 24 24');
+    warningIcon.setAttribute('fill', 'none');
+    warningIcon.setAttribute('stroke', 'currentColor');
+    warningIcon.setAttribute('stroke-width', '1.5');
+    warningIcon.setAttribute('stroke-linecap', 'round');
+    warningIcon.setAttribute('stroke-linejoin', 'round');
+
+    const trianglePath = document.createElementNS(
+      'http://www.w3.org/2000/svg',
+      'path'
+    );
+    trianglePath.setAttribute(
+      'd',
+      'M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z'
+    );
+
+    const line1 = document.createElementNS(
+      'http://www.w3.org/2000/svg',
+      'line'
+    );
+    line1.setAttribute('x1', '12');
+    line1.setAttribute('y1', '9');
+    line1.setAttribute('x2', '12');
+    line1.setAttribute('y2', '13');
+
+    const line2 = document.createElementNS(
+      'http://www.w3.org/2000/svg',
+      'line'
+    );
+    line2.setAttribute('x1', '12');
+    line2.setAttribute('y1', '17');
+    line2.setAttribute('x2', '12.01');
+    line2.setAttribute('y2', '17');
+
+    warningIcon.appendChild(trianglePath);
+    warningIcon.appendChild(line1);
+    warningIcon.appendChild(line2);
+
+    const messageText = document.createTextNode(
+      'No tabs found matching your search'
+    );
+
+    noTabsContainer.appendChild(warningIcon);
+    noTabsContainer.appendChild(messageText);
+
+    tabsContainer.appendChild(noTabsContainer);
     return;
   }
 
-  filteredTabs.forEach((tab) => {
-    const tabElement = document.createElement('div');
-    // Apply base classes and conditional classes for selection
-    const baseClasses =
-      'flex items-center p-2 rounded-xl border transition-colors duration-200';
-    const selectedClasses =
-      'bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-500/30';
-    const defaultClasses =
-      'bg-white dark:bg-neutral-800 border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-700/60';
-    tabElement.className = `${baseClasses} ${
-      tab.selected ? selectedClasses : defaultClasses
-    }`;
-    tabElement.dataset.tabId = tab.id.toString();
+  if (isGroupingEnabled) {
+    const groupedTabs: { [domain: string]: TabItem[] } = {};
 
-    // Create a favicon placeholder with the first letter of the domain if no favicon
-    let faviconHtml = '';
-    if (tab.favIconUrl) {
-      faviconHtml = `<img class="w-4 h-4 mx-2 rounded object-contain flex-shrink-0" src="${tab.favIconUrl}" alt="">`;
-    } else {
-      // Extract domain first letter for the placeholder
-      let firstLetter = 'T';
+    // 1. Group tabs by domain
+    filteredTabs.forEach((tab) => {
+      let domain = 'Other'; // Default group
       try {
         const url = new URL(tab.url);
-        // Ensure hostname exists and is not empty before getting the first letter
-        if (url.hostname && url.hostname.length > 0) {
-          firstLetter = url.hostname.charAt(0).toUpperCase();
+        if (url.hostname) {
+          domain = url.hostname.replace(/^www\./i, ''); // Clean domain
         }
       } catch (e) {
-        // Use default 'T' if URL parsing fails or hostname is invalid
-        console.warn(`Could not parse URL for favicon placeholder: ${tab.url}`);
+        console.warn(`Could not parse URL for grouping: ${tab.url}`);
       }
-      // Use amber for the placeholder background/text
-      faviconHtml = `<div class="w-4 h-4 mx-2 rounded flex items-center justify-center bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400 text-xs font-bold flex-shrink-0">${firstLetter}</div>`;
-    }
+      if (!groupedTabs[domain]) {
+        groupedTabs[domain] = [];
+      }
+      groupedTabs[domain].push(tab);
+    });
 
-    tabElement.innerHTML = `
-      <input type="checkbox" class="sr-only peer" ${
-        tab.selected ? 'checked' : ''
-      }>
-      <div class="w-4 h-4 border-2 border-neutral-300 dark:border-neutral-700 rounded peer-checked:bg-amber-500 peer-checked:border-amber-500 relative peer-checked:after:content-[''] peer-checked:after:absolute peer-checked:after:left-[4px] peer-checked:after:top-[0px] peer-checked:after:w-[5px] peer-checked:after:h-[9px] peer-checked:after:border-white peer-checked:after:border-r-2 peer-checked:after:border-b-2 peer-checked:after:rotate-45 cursor-pointer flex-shrink-0"></div>
-      ${faviconHtml}
-      <div class="flex-1 min-w-0 mr-2">
-        <div class="text-sm  truncate text-neutral-900 dark:text-neutral-100" title="${escapeHtml(
-          tab.title
-        )}">${escapeHtml(tab.title)}</div>
-        <div class="text-xs text-neutral-500 dark:text-neutral-400/80 truncate" title="${escapeHtml(
-          tab.url
-        )}">${escapeHtml(
-      tab.url.replace(/^https?:\/\//i, '').replace(/\/$/, '')
-    )}</div>
-      </div>
-      <button class="p-1 text-neutral-500 dark:text-neutral-400 hover:text-amber-600 dark:hover:text-amber-400  rounded transition-colors duration-200 cursor-pointer flex-shrink-0" title="Copy URL">
-        <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-        </svg>
-      </button>
-    `;
+    // 2. Sort domains alphabetically
+    const sortedDomains = Object.keys(groupedTabs).sort();
 
-    tabsContainer.appendChild(tabElement);
-  });
+    // 3. Render grouped tabs
+    sortedDomains.forEach((domain) => {
+      const tabsInGroup = groupedTabs[domain];
+      const selectedInGroup = tabsInGroup.filter((t) => t.selected).length;
+      const allSelectedInGroup = selectedInGroup === tabsInGroup.length;
+      const someSelectedInGroup = selectedInGroup > 0 && !allSelectedInGroup;
+
+      // Create Group Header Div (now flex)
+      const groupHeader = document.createElement('div');
+      groupHeader.className =
+        'flex items-center gap-2 text-xs font-semibold text-neutral-500 dark:text-neutral-400 pt-1 pb-2 px-2 sticky top-0 bg-white dark:bg-neutral-900 z-10';
+
+      // --- Create Group Checkbox ---
+      const groupCheckbox = document.createElement('input');
+      groupCheckbox.type = 'checkbox';
+      groupCheckbox.className = 'sr-only group-checkbox-input peer'; // Added class for listener targeting
+      groupCheckbox.checked = allSelectedInGroup;
+      groupCheckbox.indeterminate = someSelectedInGroup;
+      groupCheckbox.dataset.domain = domain; // Store domain
+
+      const groupCheckboxVisual = document.createElement('div');
+      // Base classes similar to other checkboxes, add group-specific class
+      groupCheckboxVisual.className =
+        "group-checkbox-visual w-3.5 h-3.5 border-2 border-neutral-300 dark:border-neutral-600 rounded peer-checked:bg-indigo-500 peer-checked:border-indigo-500 relative peer-checked:after:content-[''] peer-checked:after:absolute peer-checked:after:left-[3px] peer-checked:after:top-[-1px] peer-checked:after:w-[4px] peer-checked:after:h-[8px] peer-checked:after:border-white peer-checked:after:border-r-2 peer-checked:after:border-b-2 peer-checked:after:rotate-45 cursor-pointer flex-shrink-0"; // Adjusted size/position slightly
+      groupCheckboxVisual.dataset.domain = domain; // Store domain for click listener
+      // Apply indeterminate style if necessary
+      if (someSelectedInGroup) {
+        groupCheckboxVisual.classList.add('indeterminate');
+
+        groupCheckboxVisual.style.borderColor = 'var(--indigo-500)';
+      }
+
+      // Create Domain Text Span
+      const domainText = document.createElement('span');
+      domainText.textContent = domain;
+      domainText.className = 'truncate'; // Allow truncation if needed
+
+      // Append Checkbox and Text to Header
+      groupHeader.appendChild(groupCheckbox); // Hidden input
+      groupHeader.appendChild(groupCheckboxVisual); // Visual part
+      groupHeader.appendChild(domainText); // Domain name
+
+      tabsContainer.appendChild(groupHeader);
+
+      // Render tabs within the group
+      tabsInGroup.forEach((tab) => {
+        const tabElement = createTabElement(tab); // Use helper function
+        tabsContainer.appendChild(tabElement);
+      });
+    });
+  } else {
+    // --- Render Ungrouped Tabs ---
+    filteredTabs.forEach((tab) => {
+      const tabElement = createTabElement(tab); // Use helper function
+      tabsContainer.appendChild(tabElement);
+    });
+  }
 
   updateActionButtons();
 }
 
+// Helper function to create a single tab element (used by renderTabs)
+function createTabElement(tab: TabItem): HTMLDivElement {
+  const tabElement = document.createElement('div');
+  const baseClasses =
+    'flex items-center p-2 rounded-lg border transition-colors duration-200'; // Use rounded-lg
+  const selectedClasses =
+    'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-500/30 hover:bg-indigo-100 dark:hover:bg-indigo-800/50';
+  const defaultClasses =
+    'bg-white dark:bg-neutral-800/50 border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-700/60';
+  tabElement.className = `${baseClasses} ${
+    tab.selected ? selectedClasses : defaultClasses
+  }`;
+  tabElement.dataset.tabId = tab.id.toString();
+
+  // Favicon placeholder logic (remains the same)
+  let faviconHtml = '';
+  if (tab.favIconUrl) {
+    // ... (favicon img creation) ...
+    const faviconImg = document.createElement('img');
+    faviconImg.className = 'w-4 h-4 mx-2 rounded object-contain flex-shrink-0'; // Adjusted margin
+    faviconImg.src = tab.favIconUrl;
+    faviconImg.alt = '';
+    faviconHtml = faviconImg.outerHTML;
+  } else {
+    // ... (placeholder creation, using indigo) ...
+    let firstLetter = 'T';
+    try {
+      const url = new URL(tab.url);
+      if (url.hostname && url.hostname.length > 0) {
+        firstLetter = url.hostname.charAt(0).toUpperCase();
+      }
+    } catch (e) {
+      console.warn(`Could not parse URL for favicon placeholder: ${tab.url}`);
+    }
+    const faviconPlaceholder = document.createElement('div');
+    faviconPlaceholder.className =
+      'w-4 h-4 ml-1 mr-2 rounded flex items-center justify-center bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 text-xs font-bold flex-shrink-0'; // Adjusted margin
+    faviconPlaceholder.textContent = firstLetter;
+    faviconHtml = faviconPlaceholder.outerHTML;
+  }
+
+  // Pinned Icon logic (remains the same)
+  let pinnedIconHtml = '';
+  if (tab.pinned) {
+    // ... (pin icon creation) ...
+    const pinIcon = document.createElementNS(
+      'http://www.w3.org/2000/svg',
+      'svg'
+    );
+    pinIcon.setAttribute(
+      'class',
+      'w-3 h-3 ml-auto mr-1 text-neutral-500 dark:text-neutral-400 flex-shrink-0'
+    );
+    pinIcon.setAttribute('viewBox', '0 0 24 24');
+    pinIcon.setAttribute('fill', 'currentColor');
+    const pinPath = document.createElementNS(
+      'http://www.w3.org/2000/svg',
+      'path'
+    );
+    pinPath.setAttribute(
+      'd',
+      'M16 12V4h1V2H7v2h1v8l-2 3v2h6v4h2v-4h6v-2l-2-3z'
+    );
+    pinIcon.appendChild(pinPath);
+    pinnedIconHtml = pinIcon.outerHTML;
+  }
+
+  // Checkbox (remains the same)
+  const checkbox = document.createElement('input');
+  checkbox.type = 'checkbox';
+  checkbox.className = 'sr-only peer';
+  checkbox.checked = tab.selected;
+
+  // Checkbox visual element (remains the same, ensure class matches HTML)
+  const checkboxVisual = document.createElement('div');
+  checkboxVisual.className =
+    "w-4 h-4 border-2 border-neutral-300 dark:border-neutral-700 rounded peer-checked:bg-indigo-500 peer-checked:border-indigo-500 relative peer-checked:after:content-[''] peer-checked:after:absolute peer-checked:after:left-[4px] peer-checked:after:top-[0px] peer-checked:after:w-[5px] peer-checked:after:h-[9px] peer-checked:after:border-white peer-checked:after:border-r-2 peer-checked:after:border-b-2 peer-checked:after:rotate-45 cursor-pointer flex-shrink-0";
+
+  // Title container (remains the same)
+  const titleContainer = document.createElement('div');
+  titleContainer.className = 'flex-1 min-w-0 mr-2';
+
+  // Title element (remains the same, maybe adjust font size if needed)
+  const titleElement = document.createElement('div');
+  titleElement.className =
+    'text-sm truncate text-neutral-900 dark:text-neutral-100';
+  titleElement.title = tab.title;
+  titleElement.textContent = tab.title;
+
+  // URL element (remains the same)
+  const urlElement = document.createElement('div');
+  urlElement.className =
+    'text-xs text-neutral-500 dark:text-neutral-400/60 truncate';
+  urlElement.title = tab.url;
+  urlElement.textContent = tab.url
+    .replace(/^https?:\/\/(www\.)?/i, '')
+    .replace(/\/$/, '');
+
+  titleContainer.appendChild(titleElement);
+  titleContainer.appendChild(urlElement);
+
+  // Copy button (remains the same)
+  const copyButton = document.createElement('button');
+  copyButton.className =
+    'p-1 text-neutral-500 dark:text-neutral-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded transition-colors duration-200 cursor-pointer flex-shrink-0';
+  copyButton.title = 'Copy URL';
+  // ... (SVG creation for copy button) ...
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('class', 'w-4 h-4');
+  svg.setAttribute('fill', 'none');
+  svg.setAttribute('stroke', 'currentColor');
+  svg.setAttribute('stroke-width', '2');
+  svg.setAttribute('stroke-linecap', 'round');
+  svg.setAttribute('stroke-linejoin', 'round');
+  const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+  rect.setAttribute('x', '9');
+  rect.setAttribute('y', '9');
+  rect.setAttribute('width', '13');
+  rect.setAttribute('height', '13');
+  rect.setAttribute('rx', '2');
+  rect.setAttribute('ry', '2');
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.setAttribute(
+    'd',
+    'M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1'
+  );
+  svg.appendChild(rect);
+  svg.appendChild(path);
+  copyButton.appendChild(svg);
+
+  // --- Assemble Tab Element --- Order matters for layout
+  tabElement.appendChild(checkbox);
+  tabElement.appendChild(checkboxVisual);
+
+  if (faviconHtml) {
+    const tempFaviconDiv = document.createElement('div');
+    tempFaviconDiv.innerHTML = faviconHtml;
+    if (tempFaviconDiv.firstChild)
+      tabElement.appendChild(tempFaviconDiv.firstChild);
+  }
+
+  tabElement.appendChild(titleContainer);
+
+  // Add Pinned Icon here
+  if (pinnedIconHtml) {
+    const tempPinDiv = document.createElement('div');
+    tempPinDiv.className = 'ml-auto flex items-center';
+    tempPinDiv.innerHTML = pinnedIconHtml;
+    const svgElement = tempPinDiv.querySelector('svg');
+    svgElement?.setAttribute(
+      'class',
+      'w-3 h-3 mr-1 text-neutral-500 dark:text-neutral-400 flex-shrink-0'
+    );
+
+    if (tempPinDiv.firstChild) tabElement.appendChild(tempPinDiv.firstChild);
+  }
+
+  tabElement.appendChild(copyButton);
+
+  return tabElement;
+}
+
 // Filter tabs based on search input
 function filterTabs(query: string) {
-  if (!query) {
-    filteredTabs = [...tabs];
-  } else {
-    const lowerQuery = query.toLowerCase();
-    filteredTabs = tabs.filter(
-      (tab) =>
-        tab.title.toLowerCase().includes(lowerQuery) ||
-        tab.url.toLowerCase().includes(lowerQuery)
-    );
-  }
-  renderTabs();
+  applyFiltersAndRender();
 }
 
 // Update selection count
 function updateSelectionCount() {
-  // Count selected tabs from the main 'tabs' array for the global count
   const selectedCount = tabs.filter((tab) => tab.selected).length;
   selectionCount.textContent = `${selectedCount}`;
-  // Also update the main copy button state
   updateActionButtons();
 }
 
 // Update select all checkbox state (including visual representation)
 function updateSelectAllCheckbox() {
-  const visualCheckbox = document.getElementById('select-all-visual');
-  // Ensure both the actual checkbox and the visual div exist
-  if (!selectAllCheckbox || !visualCheckbox) {
+  if (!selectAllCheckbox || !selectAllVisual) {
     console.error('Select All checkbox or visual element not found');
     return;
   }
 
-  // --- Reset visual state first ---
-  visualCheckbox.classList.remove('indeterminate');
-  // REMOVE the explicit style removals via JS - CSS will handle overrides
-  // visualCheckbox.classList.remove('bg-amber-500', 'border-amber-500');
+  selectAllVisual.classList.remove('indeterminate');
 
-  // --- Determine state based on *filtered* tabs ---
   if (filteredTabs.length === 0) {
     selectAllCheckbox.checked = false;
     selectAllCheckbox.indeterminate = false;
-    return; // Visual state is handled by resetting above
+    return;
   }
 
   // Count selected tabs within the *currently filtered* list
@@ -216,23 +569,16 @@ function updateSelectAllCheckbox() {
 
   // --- Set state ---
   if (selectedInFiltered === 0) {
-    // None selected in the filtered list
     selectAllCheckbox.checked = false;
     selectAllCheckbox.indeterminate = false;
   } else if (selectedInFiltered === filteredTabs.length) {
-    // All selected in the filtered list
     selectAllCheckbox.checked = true;
     selectAllCheckbox.indeterminate = false;
-    // Visual state is handled by peer-checked
   } else {
-    // Some (but not all) selected in the filtered list
-    selectAllCheckbox.checked = false; // Input is not checked when indeterminate
+    selectAllCheckbox.checked = false;
     selectAllCheckbox.indeterminate = true;
 
-    // --- Apply indeterminate visual style ---
-    visualCheckbox.classList.add('indeterminate');
-    // REMOVE the explicit style additions via JS - CSS handles this now
-    // visualCheckbox.classList.add('bg-amber-500', 'border-amber-500');
+    selectAllVisual.classList.add('indeterminate');
   }
 }
 
@@ -252,9 +598,9 @@ function toggleSelectAll() {
     filteredTab.selected = shouldSelect;
   });
 
-  renderTabs(); // Re-render the list based on updated states
-  updateSelectionCount(); // Update counter and button state
-  updateSelectAllCheckbox(); // Ensure checkbox state (incl. indeterminate) is correct
+  renderTabs();
+  updateSelectionCount();
+  updateSelectAllCheckbox();
 }
 
 // Helper for single tab toggle logic (extracted for clarity)
@@ -267,11 +613,9 @@ function performSingleToggle(mainIndex: number, filteredIndex: number) {
     showNotification(
       'Tip: Use Shift+Click to select a range of tabs quickly.' // Changed message slightly
     );
-    shiftNotificationShown = true; // Set flag so it doesn't show again
-    // REMOVED: return; // Allow the selection to proceed
+    shiftNotificationShown = true;
   }
 
-  // --- Proceed with toggle regardless of the notification ---
   // Toggle selection in the main array
   tabs[mainIndex].selected = !tabs[mainIndex].selected;
 
@@ -295,14 +639,13 @@ function performSingleToggle(mainIndex: number, filteredIndex: number) {
     const baseClasses =
       'flex items-center p-2 rounded-xl border transition-colors duration-200';
     const selectedClasses =
-      'bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-500/30';
+      'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-500/30';
     const defaultClasses =
       'bg-white dark:bg-neutral-800 border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-700/60';
     tabElement.className = `${baseClasses} ${
       isSelected ? selectedClasses : defaultClasses
     }`;
   } else {
-    // Fallback to full render if element not found (less efficient)
     console.warn(
       'Could not find tab element for single toggle visual update, falling back to full render.'
     );
@@ -318,10 +661,9 @@ function toggleTabSelection(tabId: number, shiftKey: boolean) {
   if (currentTabIndexInFiltered === -1) return; // Clicked tab not in filtered list
 
   const mainTabIndex = tabs.findIndex((t) => t.id === tabId);
-  if (mainTabIndex === -1) return; // Should not happen if filteredTabs is correct
+  if (mainTabIndex === -1) return;
 
   if (shiftKey && lastClickedTabId !== null && lastClickedTabId !== tabId) {
-    // --- Shift-Click Range Selection ---
     const lastClickedIndexInFiltered = filteredTabs.findIndex(
       (t) => t.id === lastClickedTabId
     );
@@ -349,23 +691,18 @@ function toggleTabSelection(tabId: number, shiftKey: boolean) {
     } else {
       // Last clicked tab not in filter, treat as single click
       performSingleToggle(mainTabIndex, currentTabIndexInFiltered);
-      // Update last clicked only if toggle happened (check state *after*)
-      // Need isSelecting from the context where this is called
-      // Re-evaluate how to update lastClickedTabId correctly here if needed,
-      // but for now, let's assume the logic below handles it.
+
       lastClickedTabId = tabId;
     }
   } else {
     // --- Normal Click ---
-    const wasSelectingInitially = !tabs[mainTabIndex].selected; // Check intent *before* toggle
+    const wasSelectingInitially = !tabs[mainTabIndex].selected;
     performSingleToggle(mainTabIndex, currentTabIndexInFiltered);
-    // Update lastClickedTabId if it was a successful selection or any deselection
     if (tabs[mainTabIndex].selected || !wasSelectingInitially) {
       lastClickedTabId = tabId;
     }
   }
 
-  // Update counts and master checkbox after any selection change attempt
   updateSelectionCount();
   updateSelectAllCheckbox();
 }
@@ -414,17 +751,35 @@ function showNotification(message: string) {
   }
 
   notification = document.createElement('div');
-  // Use neutral-800 for dark background, amber-500 for light background
+  // Use neutral-800 for dark background, indigo-500 for light background
   notification.className =
-    'notification fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-amber-500 dark:bg-neutral-800 text-white dark:text-neutral-100 px-4 py-2 rounded-xl shadow-lg flex items-center gap-2 opacity-0 transition-all duration-300 ease-out z-50 text-sm';
+    'notification fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-indigo-500 dark:bg-neutral-800 text-white dark:text-neutral-100 px-4 py-2 rounded-xl shadow-lg flex items-center gap-2 opacity-0 transition-all duration-300 ease-out z-50 text-sm';
 
   const checkIcon = document.createElement('span');
   // Ensure icon stroke contrasts with background
-  checkIcon.innerHTML = `
-      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="20 6 9 17 4 12"></polyline>
-      </svg>
-    `;
+  // Create SVG element programmatically
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('width', '16');
+  svg.setAttribute('height', '16');
+  svg.setAttribute('fill', 'none');
+  svg.setAttribute('stroke', 'currentColor');
+  svg.setAttribute('stroke-width', '2');
+  svg.setAttribute('stroke-linecap', 'round');
+  svg.setAttribute('stroke-linejoin', 'round');
+
+  // Create polyline element
+  const polyline = document.createElementNS(
+    'http://www.w3.org/2000/svg',
+    'polyline'
+  );
+  polyline.setAttribute('points', '20 6 9 17 4 12');
+
+  // Append polyline to SVG
+  svg.appendChild(polyline);
+
+  // Append SVG to checkIcon
+  checkIcon.appendChild(svg);
 
   notification.appendChild(checkIcon);
   notification.appendChild(document.createTextNode(message));
@@ -443,7 +798,6 @@ function showNotification(message: string) {
   setTimeout(() => {
     notification.classList.remove('opacity-100', 'translate-y-[-10px]');
     notification.classList.add('opacity-0');
-    // Remove the element after the transition completes
     notification.addEventListener(
       'transitionend',
       () => notification.remove(),
@@ -452,17 +806,17 @@ function showNotification(message: string) {
   }, 2000);
 }
 
-// Update action buttons state (including dropdown toggle)
+// Update action buttons state
 function updateActionButtons() {
   const hasSelectedTabs = tabs.some((tab) => tab.selected);
   copySelectedBtn.disabled = !hasSelectedTabs;
-  copyFormatToggle.disabled = !hasSelectedTabs; // Also disable dropdown toggle
+  copyFormatToggle.disabled = !hasSelectedTabs;
 }
 
 // Set theme
 function setTheme(dark: boolean) {
   const htmlElement = document.documentElement;
-  const themeToggleButton = document.getElementById('theme-toggle');
+  // Get icons within the specific button
   const sunIconElement = themeToggleButton?.querySelector('.sun-icon');
   const moonIconElement = themeToggleButton?.querySelector('.moon-icon');
 
@@ -475,22 +829,12 @@ function setTheme(dark: boolean) {
     sunIconElement?.classList.add('hidden');
     moonIconElement?.classList.remove('hidden');
   }
-  // Update global variable
   isDarkMode = dark;
 }
 
-// Helper function to escape HTML
-function escapeHtml(unsafe: string): string {
-  return unsafe
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
-
-// --- Helper function to update dropdown visuals ---
 function updateFormatMenuVisuals() {
+  if (!copyFormatMenu || !copyButtonText) return;
+
   const allFormatItems = copyFormatMenu.querySelectorAll('.copy-format-item');
   allFormatItems.forEach((item) => {
     const checkmark = item.querySelector(
@@ -498,31 +842,28 @@ function updateFormatMenuVisuals() {
     ) as HTMLElement | null;
     const itemFormat = item.getAttribute('data-format');
 
-    // Define selected background classes (matching hover state)
-    const selectedBgClasses = ['bg-amber-100', 'dark:bg-amber-900/50'];
+    // Define selected background classes (matching neutral hover state from HTML)
+    const selectedBgClasses = ['bg-neutral-100', 'dark:bg-neutral-700/50'];
 
     if (checkmark) {
       if (itemFormat === selectedCopyFormat) {
-        checkmark.classList.remove('hidden'); // Show checkmark for selected
-        item.classList.add(...selectedBgClasses); // Add selected background
+        checkmark.classList.remove('hidden');
+        item.classList.add(...selectedBgClasses);
       } else {
-        checkmark.classList.add('hidden'); // Hide checkmark for others
-        item.classList.remove(...selectedBgClasses); // Remove selected background
+        checkmark.classList.add('hidden');
+        item.classList.remove(...selectedBgClasses);
       }
     }
   });
 
   // Update main button text
-  let buttonText = 'Copy Selected';
+  let buttonText = 'Copy URLs'; // Default
   switch (selectedCopyFormat) {
     case 'markdown':
       buttonText = 'Copy Markdown';
       break;
     case 'json':
       buttonText = 'Copy JSON';
-      break;
-    case 'plain':
-      buttonText = 'Copy URLs';
       break;
   }
   copyButtonText.textContent = buttonText;
@@ -532,31 +873,20 @@ function updateFormatMenuVisuals() {
 function setupEventListeners() {
   // Search input
   searchInput.addEventListener('input', () => {
-    filterTabs(searchInput.value);
-    // Also update select all checkbox state when filtering
-    updateSelectAllCheckbox();
+    applyFiltersAndRender();
   });
 
-  // Theme toggle
-  themeToggle.addEventListener('click', () => {
+  // Settings/Theme toggle
+  themeToggleButton.addEventListener('click', () => {
     isDarkMode = !isDarkMode;
     setTheme(isDarkMode);
-    // Persist theme preference if desired
-    // browser.storage.local.set({ theme: isDarkMode ? 'dark' : 'light' });
   });
 
-  // Listener for the actual checkbox (e.g., triggered by label click, accessibility tools)
-  // This handles cases where the input's state changes directly.
   selectAllCheckbox.addEventListener('change', toggleSelectAll);
 
-  // Listener for clicking the visual representation (#select-all-visual)
-  const visualCheckbox = document.getElementById('select-all-visual');
-  if (visualCheckbox) {
-    visualCheckbox.addEventListener('click', () => {
-      // 1. Manually toggle the hidden checkbox's state since clicking the div doesn't do it automatically.
+  if (selectAllVisual) {
+    selectAllVisual.addEventListener('click', () => {
       selectAllCheckbox.checked = !selectAllCheckbox.checked;
-      // 2. Manually call the handler function. Programmatically changing .checked
-      //    does NOT fire the 'change' event, so we need to call our logic directly.
       toggleSelectAll();
     });
   } else {
@@ -565,7 +895,43 @@ function setupEventListeners() {
     );
   }
 
-  // --- Copy Format Dropdown Logic ---
+  // Filter Button Clicks
+  filterButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+      const newFilter = button.id.replace('filter-', '') as typeof activeFilter;
+      if (newFilter !== activeFilter) {
+        activeFilter = newFilter;
+        applyFilterStyles();
+        applyFiltersAndRender();
+      }
+    });
+  });
+
+  // Group by Domain Toggle
+  groupDomainToggle.addEventListener('click', () => {
+    isGroupingEnabled = !isGroupingEnabled;
+    const toggleSpan = groupDomainToggle.querySelector(
+      'span[aria-hidden="true"]'
+    );
+
+    groupDomainToggle.setAttribute('aria-checked', String(isGroupingEnabled));
+    if (isGroupingEnabled) {
+      groupDomainToggle.classList.replace('bg-neutral-200', 'bg-indigo-600');
+      groupDomainToggle.classList.replace(
+        'dark:bg-neutral-700',
+        'bg-indigo-600'
+      );
+      toggleSpan?.classList.replace('translate-x-0', 'translate-x-4');
+    } else {
+      groupDomainToggle.classList.replace('bg-indigo-600', 'bg-neutral-200');
+      groupDomainToggle.classList.add('dark:bg-neutral-700');
+      toggleSpan?.classList.replace('translate-x-4', 'translate-x-0');
+    }
+
+    applyFiltersAndRender();
+  });
+
+  // --- Copy Format Dropdown Logic --- (Restored)
   copyFormatToggle.addEventListener('click', (e) => {
     e.stopPropagation();
     const isExpanded =
@@ -583,11 +949,9 @@ function setupEventListeners() {
         'data-format'
       ) as typeof selectedCopyFormat;
 
-      // Update state only if format changed
       if (format !== selectedCopyFormat) {
         selectedCopyFormat = format;
-        // Update visuals (checkmark, highlight, button text)
-        updateFormatMenuVisuals();
+        updateFormatMenuVisuals(); // Update visuals (checkmark, highlight, button text)
       }
 
       // Hide menu
@@ -599,6 +963,8 @@ function setupEventListeners() {
   // Close dropdown if clicking outside
   document.addEventListener('click', (e) => {
     if (
+      copyFormatToggle && // Check if toggle exists
+      copyFormatMenu && // Check if menu exists
       !copyFormatToggle.contains(e.target as Node) &&
       !copyFormatMenu.contains(e.target as Node)
     ) {
@@ -608,162 +974,25 @@ function setupEventListeners() {
   });
   // --- End Copy Format Dropdown Logic ---
 
-  // Add filter button functionality
-  const filterButtons = document.querySelectorAll('.filter-button');
-  filterButtons.forEach((button) => {
-    button.addEventListener('click', () => {
-      // Remove active classes from all buttons and reset default style
-      filterButtons.forEach((btn) => {
-        btn.classList.remove(
-          'active',
-          'bg-amber-100',
-          'dark:bg-amber-900/50',
-          'text-amber-600',
-          'dark:text-amber-400',
-          'hover:bg-amber-200',
-          'dark:hover:bg-amber-800/60'
-        );
-        btn.classList.add(
-          'bg-neutral-200',
-          'dark:bg-neutral-800',
-          'text-neutral-900',
-          'dark:text-neutral-100',
-          'hover:bg-amber-100',
-          'dark:hover:bg-amber-900/50',
-          'hover:text-amber-600',
-          'dark:hover:text-amber-400'
-        );
-      });
-
-      // Add active classes to the clicked button and remove default style
-      button.classList.remove(
-        'bg-neutral-200',
-        'dark:bg-neutral-800',
-        'text-neutral-900',
-        'dark:text-neutral-100',
-        'hover:bg-amber-100',
-        'dark:hover:bg-amber-900/50',
-        'hover:text-amber-600',
-        'dark:hover:text-amber-400'
-      );
-      button.classList.add(
-        'active',
-        'bg-amber-100',
-        'dark:bg-amber-900/50',
-        'text-amber-600',
-        'dark:text-amber-400',
-        'hover:bg-amber-200',
-        'dark:hover:bg-amber-800/60'
-      );
-
-      // Filter tabs based on button text
-      const filterType = button.textContent?.trim().toLowerCase();
-      const currentSearch = searchInput.value; // Keep current search query
-
-      if (filterType === 'all') {
-        filteredTabs = [...tabs];
-      } else if (filterType === 'active') {
-        filteredTabs = tabs.filter((tab) => tab.active);
-      }
-
-      // Re-apply search filter on top of type filter
-      if (currentSearch) {
-        const lowerQuery = currentSearch.toLowerCase();
-        filteredTabs = filteredTabs.filter(
-          (tab) =>
-            tab.title.toLowerCase().includes(lowerQuery) ||
-            tab.url.toLowerCase().includes(lowerQuery)
-        );
-      }
-
-      renderTabs();
-      updateSelectAllCheckbox(); // Update checkbox based on new filtered list
+  // --- Filter Dropdown Logic ---
+  if (filterButton && filterMenu) {
+    filterButton.addEventListener('click', (e) => {
+      e.stopPropagation(); // Prevent click from immediately closing the menu
+      filterMenu.classList.toggle('hidden');
+      const isExpanded = !filterMenu.classList.contains('hidden');
+      filterButton.setAttribute('aria-expanded', String(isExpanded));
     });
-  });
+  } else {
+    console.error('Filter button or menu not found');
+  }
 
-  // Tab container delegation
-  tabsContainer.addEventListener('click', async (e) => {
-    const target = e.target as HTMLElement;
-    const tabItem = target.closest('[data-tab-id]') as HTMLElement;
-
-    if (!tabItem) return;
-
-    const tabId = parseInt(tabItem.dataset.tabId || '0', 10);
-    if (!tabId) return;
-
-    // Handle checkbox click (visual or hidden input)
-    if (
-      target.matches('input[type="checkbox"]') ||
-      target.matches('.w-4.h-4.border-2') // Target the visual checkbox div
-    ) {
-      toggleTabSelection(tabId, e.shiftKey);
-      return; // Prevent any further action like switching
-    }
-
-    // Handle copy button click
-    const copyButton = target.closest(
-      'button[title="Copy URL"]'
-    ) as HTMLButtonElement | null;
-
-    if (copyButton) {
-      // Check if the clicked element is the copy button or inside it
-      const tab = tabs.find((t) => t.id === tabId);
-      if (tab) {
-        try {
-          await copyToClipboard(tab.url);
-          // --- Icon Swap Logic ---
-          const originalIconHTML = copyButton.innerHTML; // Store original SVG
-          const checkmarkSVG = `
-            <svg viewBox="0 0 24 24" class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="20 6 9 17 4 12"></polyline>
-            </svg>
-          `;
-          copyButton.innerHTML = checkmarkSVG; // Show checkmark
-          copyButton.disabled = true; // Briefly disable button
-
-          // Restore the icon after a delay
-          setTimeout(() => {
-            if (copyButton) {
-              // Check if button still exists
-              copyButton.innerHTML = originalIconHTML; // Restore original SVG
-              copyButton.disabled = false; // Re-enable button
-            }
-          }, 1500); // 1.5 seconds delay
-        } catch (err) {
-          console.error('Failed to copy URL:', err);
-          showNotification('Failed to copy URL'); // Show error notification
-        }
-      }
-      return; // Prevent any further action like switching
-    }
-
-    // --- REMOVED THE SWITCH TO TAB LOGIC ---
-    // If the click was not on the checkbox or copy button, DO NOTHING by default.
-    // Users can select/deselect using the checkbox and copy using the button.
-    // Switching tabs is handled by the browser's native UI.
-
-    /* --- OLD CODE THAT WAS REMOVED ---
-    // If the click was not on the checkbox or copy button, switch to the tab
-    try {
-      await switchToTab(tabId);
-      // Optionally close the popup after switching
-      // window.close();
-    } catch (err) {
-      console.error(`Failed to switch to tab ${tabId}:`, err);
-      // Maybe the tab was closed - reload list?
-      await loadTabs();
-    }
-    */
-    // --- END OF REMOVED CODE ---
-  }); // End of tabsContainer listener
-
-  // Copy selected URLs (Main Button)
+  // Main Copy Button Click (Restored, targets #copy-selected)
   copySelectedBtn.addEventListener('click', async () => {
     const selectedTabs = tabs.filter((tab) => tab.selected);
     if (selectedTabs.length === 0) return;
 
     let textToCopy = '';
-    let formatDesc = ''; // Description for notification
+    let formatDesc = '';
 
     switch (selectedCopyFormat) {
       case 'markdown':
@@ -793,7 +1022,245 @@ function setupEventListeners() {
     copyFormatMenu.classList.add('hidden');
     copyFormatToggle.setAttribute('aria-expanded', 'false');
   });
+
+  // Tab container delegation (Clicking on tabs, copy icons)
+  tabsContainer.addEventListener('click', async (e) => {
+    const target = e.target as HTMLElement;
+
+    // --- Handle Group Checkbox Click ---
+    const groupVisualCheckbox = target.closest('.group-checkbox-visual');
+    if (
+      groupVisualCheckbox &&
+      groupVisualCheckbox.hasAttribute('data-domain')
+    ) {
+      const domain = groupVisualCheckbox.getAttribute('data-domain')!;
+      const groupInputElement = tabsContainer.querySelector(
+        `input.group-checkbox-input[data-domain="${domain}"]`
+      ) as HTMLInputElement | null;
+
+      if (groupInputElement) {
+        // Determine if we should select all (true) or deselect all (false)
+        // If it's currently checked, we deselect. Otherwise (unchecked or indeterminate), we select.
+        const shouldSelect =
+          !groupInputElement.checked || groupInputElement.indeterminate;
+
+        let changed = false;
+        tabs.forEach((tab) => {
+          let tabDomain = 'Other';
+          try {
+            const url = new URL(tab.url);
+            if (url.hostname) {
+              tabDomain = url.hostname.replace(/^www\./i, '');
+            }
+          } catch {}
+
+          if (tabDomain === domain) {
+            if (tab.selected !== shouldSelect) {
+              tab.selected = shouldSelect;
+              changed = true;
+            }
+          }
+        });
+
+        if (changed) {
+          applyFiltersAndRender(); // Re-render everything to update states
+          updateSelectionCount();
+          updateSelectAllCheckbox();
+        }
+      }
+      return; // Don't process further tab clicks
+    }
+
+    // --- Existing Tab Item Click Logic ---
+    const tabItem = target.closest('[data-tab-id]') as HTMLElement;
+    if (!tabItem) return;
+
+    const tabId = parseInt(tabItem.dataset.tabId || '0', 10);
+    if (!tabId) return;
+
+    // Handle individual tab checkbox click
+    if (
+      target.matches('input[type="checkbox"]:not(.group-checkbox-input)') || // Exclude group inputs
+      target.matches('.w-4.h-4.border-2') // Target the visual checkbox div for individual tabs
+    ) {
+      toggleTabSelection(tabId, e.shiftKey);
+      return; // Prevent any further action like switching
+    }
+
+    // Handle copy button click
+    const copyButton = target.closest(
+      'button[title="Copy URL"]'
+    ) as HTMLButtonElement | null;
+
+    if (copyButton) {
+      // Check if the clicked element is the copy button or inside it
+      const tab = tabs.find((t) => t.id === tabId);
+      if (tab) {
+        try {
+          await copyToClipboard(tab.url);
+          // --- Icon Swap Logic ---
+          const originalIconHTML = copyButton.innerHTML; // Store original SVG
+          // Create SVG element programmatically
+          const checkmarkSVG = document.createElementNS(
+            'http://www.w3.org/2000/svg',
+            'svg'
+          );
+          checkmarkSVG.setAttribute('viewBox', '0 0 24 24');
+          checkmarkSVG.setAttribute('class', 'w-4 h-4 text-green-500');
+          checkmarkSVG.setAttribute('fill', 'none');
+          checkmarkSVG.setAttribute('stroke', 'currentColor');
+          checkmarkSVG.setAttribute('stroke-width', '2');
+          checkmarkSVG.setAttribute('stroke-linecap', 'round');
+          checkmarkSVG.setAttribute('stroke-linejoin', 'round');
+
+          // Create polyline element
+          const polyline = document.createElementNS(
+            'http://www.w3.org/2000/svg',
+
+            'polyline'
+          );
+          polyline.setAttribute('points', '20 6 9 17 4 12');
+
+          // Append polyline to SVG
+          checkmarkSVG.appendChild(polyline);
+          copyButton.innerHTML = checkmarkSVG.outerHTML; // Show checkmark
+          copyButton.disabled = true; // Briefly disable button
+
+          // Restore the icon after a delay
+          setTimeout(() => {
+            if (copyButton) {
+              // Check if button still exists
+              copyButton.innerHTML = originalIconHTML; // Restore original SVG
+              copyButton.disabled = false; // Re-enable button
+            }
+          }, 1500); // 1.5 seconds delay
+        } catch (err) {
+          console.error('Failed to copy URL:', err);
+          showNotification('Failed to copy URL'); // Show error notification
+        }
+      }
+      return; // Prevent any further action like switching
+    }
+  });
+
+  // Add context menu listener for switching tabs
+  tabsContainer.addEventListener('contextmenu', (e) => {
+    const target = e.target as HTMLElement;
+    const tabItem = target.closest('[data-tab-id]') as HTMLElement;
+
+    if (tabItem && tabItem.dataset.tabId) {
+      e.preventDefault(); // Prevent default context menu
+      const tabId = parseInt(tabItem.dataset.tabId, 10);
+      if (!isNaN(tabId)) {
+        switchToTab(tabId);
+      }
+    }
+    // If not clicking on a tab item, the default context menu will show as usual
+  });
+
+  // Hide Pinned Toggle Listener
+  if (hidePinnedToggle) {
+    hidePinnedToggle.addEventListener('click', () => {
+      isHidePinnedEnabled = !isHidePinnedEnabled; // Toggle the state
+
+      // Update toggle visuals
+      const toggleSpan = hidePinnedToggle.querySelector(
+        'span[aria-hidden="true"]'
+      );
+      hidePinnedToggle.setAttribute(
+        'aria-checked',
+        String(isHidePinnedEnabled)
+      );
+      if (isHidePinnedEnabled) {
+        hidePinnedToggle.classList.replace('bg-neutral-200', 'bg-indigo-600');
+        hidePinnedToggle.classList.replace(
+          'dark:bg-neutral-700',
+          'bg-indigo-600'
+        );
+        toggleSpan?.classList.replace('translate-x-0', 'translate-x-4');
+      } else {
+        hidePinnedToggle.classList.replace('bg-indigo-600', 'bg-neutral-200');
+        hidePinnedToggle.classList.add('dark:bg-neutral-700');
+        toggleSpan?.classList.replace('translate-x-4', 'translate-x-0');
+      }
+
+      applyFiltersAndRender();
+    });
+  }
 }
 
 // Initialize the app when DOM is loaded
 document.addEventListener('DOMContentLoaded', init);
+
+// Close dropdowns if clicking outside
+document.addEventListener('click', (e) => {
+  // Close Filter Menu
+  if (
+    filterMenu &&
+    filterButton &&
+    !filterMenu.classList.contains('hidden') &&
+    !filterButton.contains(e.target as Node) &&
+    !filterMenu.contains(e.target as Node)
+  ) {
+    filterMenu.classList.add('hidden');
+    filterButton.setAttribute('aria-expanded', 'false');
+  }
+
+  // Close Copy Format Menu (Existing logic)
+  if (
+    copyFormatMenu &&
+    copyFormatToggle &&
+    !copyFormatMenu.classList.contains('hidden') &&
+    !copyFormatToggle.contains(e.target as Node) &&
+    !copyFormatMenu.contains(e.target as Node)
+  ) {
+    copyFormatMenu.classList.add('hidden');
+    copyFormatToggle.setAttribute('aria-expanded', 'false');
+  }
+});
+
+function applyIndeterminateGroupStyle(element: HTMLElement) {
+  element.style.backgroundColor = 'theme("colors.indigo.500")';
+  element.style.borderColor = 'theme("colors.indigo.500")';
+
+  element.classList.add('group-indeterminate');
+}
+
+function removeIndeterminateGroupStyle(element: HTMLElement) {
+  element.classList.remove('group-indeterminate');
+  element.style.backgroundColor = '';
+  element.style.borderColor = '';
+}
+
+// Function to control the enabled/disabled state of the Hide Pinned setting within the dropdown
+function updateHidePinnedVisibility() {
+  if (hidePinnedSettingContainer && hidePinnedToggle && hidePinnedLabel) {
+    if (activeFilter === 'all') {
+      // Enable the setting
+      hidePinnedSettingContainer.classList.remove(
+        'opacity-50',
+        'pointer-events-none'
+      );
+      hidePinnedToggle.disabled = false;
+      hidePinnedLabel.classList.remove('cursor-not-allowed');
+      hidePinnedLabel.classList.add('cursor-pointer');
+    } else {
+      // Disable the setting
+      hidePinnedSettingContainer.classList.add(
+        'opacity-50',
+        'pointer-events-none'
+      );
+      hidePinnedToggle.disabled = true;
+      hidePinnedToggle.setAttribute('aria-checked', 'false');
+      hidePinnedToggle.classList.replace('bg-indigo-600', 'bg-neutral-200');
+      hidePinnedToggle.classList.add('dark:bg-neutral-700');
+      hidePinnedToggle
+        .querySelector('span[aria-hidden="true"]')
+        ?.classList.replace('translate-x-4', 'translate-x-0');
+
+      isHidePinnedEnabled = false; // Reset state variable too
+      hidePinnedLabel.classList.add('cursor-not-allowed');
+      hidePinnedLabel.classList.remove('cursor-pointer');
+    }
+  }
+}

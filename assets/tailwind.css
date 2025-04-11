@@ -1,5 +1,49 @@
 @import 'tailwindcss';
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #242424;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+}
+
+@font-face {
+  font-family: 'Redaction';
+  src: url('fonts/Redaction_50-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Redaction';
+  src: url('fonts/Redaction_50-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Redaction';
+  src: url('fonts/Redaction_50-Italic.woff2') format('woff2');
+  font-weight: 400;
+  font-style: italic;
+}
+
+@theme {
+  --font-redaction: 'Redaction', serif;
+}
+
 /* Custom Scrollbar for #tabs-container */
 #tabs-container::-webkit-scrollbar {
   width: 5px; /* Make scrollbar thinner */
@@ -11,27 +55,33 @@
 }
 
 #tabs-container::-webkit-scrollbar-thumb {
-  background-color: #f59e0b; /* amber-500 */
+  background-color: theme(
+    'colors.indigo.500'
+  ); /* Use Tailwind theme function */
   border-radius: 20px; /* Rounded thumb */
   border: none; /* No border around thumb */
 }
 
 #tabs-container::-webkit-scrollbar-thumb:hover {
-  background-color: #d97706; /* amber-600 on hover */
+  background-color: theme(
+    'colors.indigo.600'
+  ); /* Use Tailwind theme function */
 }
 
 /* Firefox Scrollbar Styles */
 #tabs-container {
   scrollbar-width: thin; /* Use thin scrollbar */
-  scrollbar-color: #f59e0b transparent; /* thumb color, track color */
+  scrollbar-color: theme('colors.indigo.500') transparent; /* thumb color, track color */
 }
 
 /* --- Indeterminate Checkbox Style --- */
 /* Style for the visual checkbox div when the actual checkbox is indeterminate */
 #select-all-visual.indeterminate {
   /* Add background and border directly here */
-  background-color: #f59e0b; /* amber-500 */
-  border-color: #f59e0b; /* amber-500 */
+  background-color: theme(
+    'colors.indigo.500'
+  ); /* Use Tailwind theme function */
+  border-color: theme('colors.indigo.500'); /* Use Tailwind theme function */
 }
 
 #select-all-visual.indeterminate::after {
