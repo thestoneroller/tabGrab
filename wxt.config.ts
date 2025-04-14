@@ -5,11 +5,15 @@ import { defineConfig } from 'wxt';
 // See https://wxt.dev/api/config.html
 export default defineConfig({
   manifest: {
-    permissions: ['tabs'],
+    permissions: ['tabs', 'storage'],
     browser_specific_settings: {
       gecko: {
-        id: 'tab-grab@extension.com',
+        id: 'tab-grab@thestoneroller.com',
       },
+    },
+    content_security_policy: {
+      extension_pages:
+        "script-src 'self'; object-src 'self'; style-src 'self' 'unsafe-inline'",
     },
   },
   vite: () => ({

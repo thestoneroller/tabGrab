@@ -87,8 +87,8 @@
               </g>
             </svg>
           </div>
-          <p class="text-xl font-redaction tracking-wider">
-            Tab<span class="font-redaction italic">Grab</span>
+          <p class="text-xl font-serif tracking-wider">
+            Tab<span class="font-serif italic">Grab</span>
           </p>
         </div>
         <div class="flex items-center gap-2 relative">
@@ -155,7 +155,7 @@
       </div>
 
       <div class="flex items-center w-full justify-between mb-4 relative">
-        <div class="flex items-centergap-2">
+        <div class="flex items-center gap-1">
           <button
             id="filter-all"
             class="filter-button cursor-pointer flex items-center gap-2 px-3 py-1 text-sm rounded-lg transition-colors duration-200"
@@ -182,7 +182,7 @@
         <button
           id="filter-button"
           aria-label="Open filter menu"
-          class="w-8 h-8 cursor-pointer flex items-center justify-center rounded-full hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors duration-200"
+          class="w-8 h-8 cursor-pointer flex items-center justify-center rounded-full hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors duration-200"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -198,7 +198,7 @@
 
         <div
           id="filter-menu"
-          class="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-600 rounded-xl shadow-lg z-10 hidden"
+          class="absolute z-50 right-0 top-full mt-2 w-48 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-600 rounded-xl shadow-lg hidden"
           role="menu"
           aria-orientation="vertical"
           aria-labelledby="filter-button"
@@ -282,7 +282,7 @@
 
       <div
         id="tabs-container"
-        class="flex-1 overflow-y-auto pr-2 space-y-2 mb-4"
+        class="flex-1 overflow-y-auto space-y-2 mb-4"
       ></div>
 
       <!-- Footer Actions -->

@@ -88,11 +88,17 @@ const hidePinnedLabel = document.getElementById(
   'hide-pinned-label'
 ) as HTMLLabelElement;
 
+// Storage keys
+const SETTINGS_STORAGE_KEY = 'tabgrab_filter_settings';
+
 async function init() {
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
   isDarkMode = prefersDark;
   setTheme(isDarkMode);
+
+  // Load settings first
+  await loadFilterSettings();
 
   // Load tabs
   await loadTabs();
@@ -102,6 +108,10 @@ async function init() {
   updateHeaderCount();
   applyFilterStyles();
   updateFormatMenuVisuals(); // Restore dropdown visual update
+
+  // Apply initial state to toggles based on loaded settings
+  updateToggleVisuals(groupDomainToggle, isGroupingEnabled);
+  updateToggleVisuals(hidePinnedToggle, isHidePinnedEnabled);
 
   // Set up event listeners
   setupEventListeners();
@@ -203,6 +213,9 @@ function applyFiltersAndRender() {
 
   // Update visibility of the hide pinned section first
   updateHidePinnedVisibility();
+
+  // Ensure toggle visuals match the current state after visibility update
+  updateToggleVisuals(hidePinnedToggle, isHidePinnedEnabled);
 
   let baseFiltered = tabs;
   if (activeFilter === 'pinned') {
@@ -378,11 +391,11 @@ function renderTabs() {
 function createTabElement(tab: TabItem): HTMLDivElement {
   const tabElement = document.createElement('div');
   const baseClasses =
-    'flex items-center p-2 rounded-lg border transition-colors duration-200'; // Use rounded-lg
+    'flex items-center p-2 rounded-lg border transition-colors duration-200';
   const selectedClasses =
     'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-500/30 hover:bg-indigo-100 dark:hover:bg-indigo-800/50';
   const defaultClasses =
-    'bg-white dark:bg-neutral-800/50 border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-700/60';
+    'bg-white dark:bg-neutral-800/50 border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800';
   tabElement.className = `${baseClasses} ${
     tab.selected ? selectedClasses : defaultClasses
   }`;
@@ -753,7 +766,7 @@ function showNotification(message: string) {
   notification = document.createElement('div');
   // Use neutral-800 for dark background, indigo-500 for light background
   notification.className =
-    'notification fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-indigo-500 dark:bg-neutral-800 text-white dark:text-neutral-100 px-4 py-2 rounded-xl shadow-lg flex items-center gap-2 opacity-0 transition-all duration-300 ease-out z-50 text-sm';
+    'notification fixed bottom-16 border-2 border-indigo-500 w-full max-w-[356px] left-1/2 transform -translate-x-1/2 backdrop-blur-sm bg-indigo-500 dark:bg-indigo-800/50 text-white dark:text-neutral-100 px-4 py-2 rounded-xl shadow-lg flex items-center gap-2 opacity-0 transition-all duration-300 ease-out z-50 text-sm';
 
   const checkIcon = document.createElement('span');
   // Ensure icon stroke contrasts with background
@@ -897,37 +910,22 @@ function setupEventListeners() {
 
   // Filter Button Clicks
   filterButtons.forEach((button) => {
-    button.addEventListener('click', () => {
+    button.addEventListener('click', async () => {
       const newFilter = button.id.replace('filter-', '') as typeof activeFilter;
       if (newFilter !== activeFilter) {
         activeFilter = newFilter;
         applyFilterStyles();
+        await saveFilterSettings();
         applyFiltersAndRender();
       }
     });
   });
 
   // Group by Domain Toggle
-  groupDomainToggle.addEventListener('click', () => {
+  groupDomainToggle.addEventListener('click', async () => {
     isGroupingEnabled = !isGroupingEnabled;
-    const toggleSpan = groupDomainToggle.querySelector(
-      'span[aria-hidden="true"]'
-    );
-
-    groupDomainToggle.setAttribute('aria-checked', String(isGroupingEnabled));
-    if (isGroupingEnabled) {
-      groupDomainToggle.classList.replace('bg-neutral-200', 'bg-indigo-600');
-      groupDomainToggle.classList.replace(
-        'dark:bg-neutral-700',
-        'bg-indigo-600'
-      );
-      toggleSpan?.classList.replace('translate-x-0', 'translate-x-4');
-    } else {
-      groupDomainToggle.classList.replace('bg-indigo-600', 'bg-neutral-200');
-      groupDomainToggle.classList.add('dark:bg-neutral-700');
-      toggleSpan?.classList.replace('translate-x-4', 'translate-x-0');
-    }
-
+    updateToggleVisuals(groupDomainToggle, isGroupingEnabled);
+    await saveFilterSettings();
     applyFiltersAndRender();
   });
 
@@ -1160,30 +1158,10 @@ function setupEventListeners() {
 
   // Hide Pinned Toggle Listener
   if (hidePinnedToggle) {
-    hidePinnedToggle.addEventListener('click', () => {
-      isHidePinnedEnabled = !isHidePinnedEnabled; // Toggle the state
-
-      // Update toggle visuals
-      const toggleSpan = hidePinnedToggle.querySelector(
-        'span[aria-hidden="true"]'
-      );
-      hidePinnedToggle.setAttribute(
-        'aria-checked',
-        String(isHidePinnedEnabled)
-      );
-      if (isHidePinnedEnabled) {
-        hidePinnedToggle.classList.replace('bg-neutral-200', 'bg-indigo-600');
-        hidePinnedToggle.classList.replace(
-          'dark:bg-neutral-700',
-          'bg-indigo-600'
-        );
-        toggleSpan?.classList.replace('translate-x-0', 'translate-x-4');
-      } else {
-        hidePinnedToggle.classList.replace('bg-indigo-600', 'bg-neutral-200');
-        hidePinnedToggle.classList.add('dark:bg-neutral-700');
-        toggleSpan?.classList.replace('translate-x-4', 'translate-x-0');
-      }
-
+    hidePinnedToggle.addEventListener('click', async () => {
+      isHidePinnedEnabled = !isHidePinnedEnabled;
+      updateToggleVisuals(hidePinnedToggle, isHidePinnedEnabled);
+      await saveFilterSettings();
       applyFiltersAndRender();
     });
   }
@@ -1242,7 +1220,14 @@ function updateHidePinnedVisibility() {
         'pointer-events-none'
       );
       hidePinnedToggle.disabled = false;
+      hidePinnedToggle.classList.remove('dark:bg-neutral-700');
+      hidePinnedToggle.classList.add('bg-indigo-600');
+      hidePinnedToggle
+        .querySelector('span[aria-hidden="true"]')
+        ?.classList.replace('translate-x-0', 'translate-x-4');
       hidePinnedLabel.classList.remove('cursor-not-allowed');
+      hidePinnedLabel.classList.remove('opacity-30');
+      hidePinnedToggle.classList.remove('opacity-30');
       hidePinnedLabel.classList.add('cursor-pointer');
     } else {
       // Disable the setting
@@ -1258,9 +1243,59 @@ function updateHidePinnedVisibility() {
         .querySelector('span[aria-hidden="true"]')
         ?.classList.replace('translate-x-4', 'translate-x-0');
 
-      isHidePinnedEnabled = false; // Reset state variable too
       hidePinnedLabel.classList.add('cursor-not-allowed');
+      hidePinnedLabel.classList.add('opacity-30');
+      hidePinnedToggle.classList.add('opacity-30');
       hidePinnedLabel.classList.remove('cursor-pointer');
     }
+  }
+}
+
+// --- Settings Persistence ---
+async function loadFilterSettings() {
+  try {
+    const result = await browser.storage.local.get(SETTINGS_STORAGE_KEY);
+    const savedSettings = result[SETTINGS_STORAGE_KEY];
+    if (savedSettings) {
+      activeFilter = savedSettings.activeFilter ?? 'all';
+      isGroupingEnabled = savedSettings.isGroupingEnabled ?? false;
+      isHidePinnedEnabled = savedSettings.isHidePinnedEnabled ?? false;
+    }
+    // If no settings saved or keys are missing, defaults are already set
+  } catch (error) {
+    console.error('Error loading filter settings:', error);
+    // Keep default settings if loading fails
+  }
+}
+
+async function saveFilterSettings() {
+  const settings = {
+    activeFilter,
+    isGroupingEnabled,
+    isHidePinnedEnabled,
+  };
+  try {
+    await browser.storage.local.set({ [SETTINGS_STORAGE_KEY]: settings });
+  } catch (error) {
+    console.error('Error saving filter settings:', error);
+  }
+}
+
+// Helper to update toggle visuals based on state
+function updateToggleVisuals(
+  toggleButton: HTMLButtonElement | null,
+  isEnabled: boolean
+) {
+  if (!toggleButton) return;
+  const toggleSpan = toggleButton.querySelector('span[aria-hidden="true"]');
+  toggleButton.setAttribute('aria-checked', String(isEnabled));
+  if (isEnabled) {
+    toggleButton.classList.replace('bg-neutral-200', 'bg-indigo-600');
+    toggleButton.classList.replace('dark:bg-neutral-700', 'bg-indigo-600');
+    toggleSpan?.classList.replace('translate-x-0', 'translate-x-4');
+  } else {
+    toggleButton.classList.replace('bg-indigo-600', 'bg-neutral-200');
+    toggleButton.classList.add('dark:bg-neutral-700');
+    toggleSpan?.classList.replace('translate-x-4', 'translate-x-0');
   }
 }
