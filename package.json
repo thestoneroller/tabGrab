@@ -2,7 +2,7 @@
   "name": "Tab Grab",
   "description": "Copy URLs from multiple tabs at once",
   "private": true,
-  "version": "1.2.1",
+  "version": "1.2.2",
   "type": "module",
   "scripts": {
     "dev": "wxt",
