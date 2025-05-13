@@ -17,6 +17,7 @@ let shiftNotificationShown = false; // Add this flag
 let activeFilter: 'all' | 'pinned' = 'all'; // Removed 'active' from filter types
 let isGroupingEnabled = false; // New state for grouping
 let isHidePinnedEnabled = false; // New state for hiding pinned tabs
+let formatPreference: 'plain' | 'markdown' | 'json' = 'plain';
 
 // DOM Elements
 const searchInput = document.getElementById('search-input') as HTMLInputElement;
@@ -90,6 +91,7 @@ const hidePinnedLabel = document.getElementById(
 
 // Storage keys
 const SETTINGS_STORAGE_KEY = 'tabgrab_filter_settings';
+const FORMAT_PREFERENCE_KEY = 'tabgrab_format_preference'; // New key for format
 
 async function init() {
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -99,6 +101,7 @@ async function init() {
 
   // Load settings first
   await loadFilterSettings();
+  await loadFormatPreference(); // Load format preference
 
   // Load tabs
   await loadTabs();
@@ -938,7 +941,7 @@ function setupEventListeners() {
     copyFormatToggle.setAttribute('aria-expanded', String(!isExpanded));
   });
 
-  copyFormatMenu.addEventListener('click', (e) => {
+  copyFormatMenu.addEventListener('click', async (e) => {
     const target = e.target as HTMLElement;
     const formatItem = target.closest('.copy-format-item');
     if (formatItem && formatItem.hasAttribute('data-format')) {
@@ -950,6 +953,7 @@ function setupEventListeners() {
       if (format !== selectedCopyFormat) {
         selectedCopyFormat = format;
         updateFormatMenuVisuals(); // Update visuals (checkmark, highlight, button text)
+        await saveFormatPreference(); // Save the newly selected format
       }
 
       // Hide menu
@@ -1279,6 +1283,23 @@ async function saveFilterSettings() {
   } catch (error) {
     console.error('Error saving filter settings:', error);
   }
+}
+
+// New function to load format preference
+async function loadFormatPreference() {
+  const storedPreference = await browser.storage.local.get(
+    FORMAT_PREFERENCE_KEY
+  );
+  if (storedPreference[FORMAT_PREFERENCE_KEY]) {
+    selectedCopyFormat = storedPreference[FORMAT_PREFERENCE_KEY];
+  }
+}
+
+// New function to save format preference
+async function saveFormatPreference() {
+  await browser.storage.local.set({
+    [FORMAT_PREFERENCE_KEY]: selectedCopyFormat,
+  });
 }
 
 // Helper to update toggle visuals based on state
