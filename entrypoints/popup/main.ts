@@ -1,4 +1,4 @@
-import { FORMAT_PREFERENCE_KEY } from '@/constants';
+import { FORMAT_PREFERENCE_KEY, THEME_PREFERENCE_KEY } from '@/constants';
 import { SETTINGS_STORAGE_KEY } from '@/constants';
 import { formatUrlsPlain, formatUrlsMarkdown, formatUrlsJson } from '@/utils';
 // State management
@@ -82,11 +82,18 @@ const hidePinnedSettingContainer = document.getElementById(
 const hidePinnedLabel = document.getElementById(
   'hide-pinned-label'
 ) as HTMLLabelElement;
+const feedbackButton = document.getElementById(
+  'feedback-button'
+) as HTMLAnchorElement;
 
 async function init() {
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-
   isDarkMode = prefersDark;
+
+  // Load theme preference first
+  await loadThemePreference();
+  // If isDarkMode is still its default (system preference), and a theme preference was loaded, use that.
+  // Otherwise, setTheme will use the system preference or the loaded preference.
   setTheme(isDarkMode);
 
   // Load settings first
@@ -108,6 +115,14 @@ async function init() {
 
   // Set up event listeners
   setupEventListeners();
+
+  // Check if browser is Firefox and update feedback link
+  if (navigator.userAgent.includes('Firefox')) {
+    if (feedbackButton) {
+      feedbackButton.href =
+        'https://addons.mozilla.org/en-US/firefox/addon/tab-grab/';
+    }
+  }
 }
 
 // Load all tabs from the browser
@@ -864,9 +879,10 @@ function setupEventListeners() {
   });
 
   // Settings/Theme toggle
-  themeToggleButton.addEventListener('click', () => {
+  themeToggleButton.addEventListener('click', async () => {
     isDarkMode = !isDarkMode;
     setTheme(isDarkMode);
+    await saveThemePreference();
   });
 
   selectAllCheckbox.addEventListener('change', toggleSelectAll);
@@ -1299,4 +1315,29 @@ if (archiveRestoreIcon && archiveRestoreTooltip) {
     archiveRestoreTooltip.classList.add('opacity-0');
     archiveRestoreTooltip.classList.remove('opacity-100');
   });
+}
+
+// --- Load Theme Preference ---
+async function loadThemePreference() {
+  try {
+    const result = await browser.storage.local.get(THEME_PREFERENCE_KEY);
+    const savedTheme = result[THEME_PREFERENCE_KEY];
+    if (savedTheme !== undefined) {
+      // Check if a theme was explicitly saved
+      isDarkMode = savedTheme;
+    }
+    // If no theme saved, isDarkMode retains its system-preference-based value set in init()
+  } catch (error) {
+    console.error('Error loading theme preference:', error);
+    // Keep default (system preference) if loading fails
+  }
+}
+
+// --- Save Theme Preference ---
+async function saveThemePreference() {
+  try {
+    await browser.storage.local.set({ [THEME_PREFERENCE_KEY]: isDarkMode });
+  } catch (error) {
+    console.error('Error saving theme preference:', error);
+  }
 }
