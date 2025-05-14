@@ -1,12 +1,6 @@
-interface TabItem {
-  id: number;
-  title: string;
-  url: string;
-  favIconUrl?: string;
-  selected: boolean;
-  pinned: boolean;
-}
-
+import { FORMAT_PREFERENCE_KEY } from '@/constants';
+import { SETTINGS_STORAGE_KEY } from '@/constants';
+import { formatUrlsPlain, formatUrlsMarkdown, formatUrlsJson } from '@/utils';
 // State management
 let tabs: TabItem[] = [];
 let filteredTabs: TabItem[] = [];
@@ -88,10 +82,6 @@ const hidePinnedSettingContainer = document.getElementById(
 const hidePinnedLabel = document.getElementById(
   'hide-pinned-label'
 ) as HTMLLabelElement;
-
-// Storage keys
-const SETTINGS_STORAGE_KEY = 'tabgrab_filter_settings';
-const FORMAT_PREFERENCE_KEY = 'tabgrab_format_preference'; // New key for format
 
 async function init() {
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -553,11 +543,6 @@ function createTabElement(tab: TabItem): HTMLDivElement {
   return tabElement;
 }
 
-// Filter tabs based on search input
-function filterTabs(query: string) {
-  applyFiltersAndRender();
-}
-
 // Update selection count
 function updateSelectionCount() {
   const selectedCount = tabs.filter((tab) => tab.selected).length;
@@ -730,20 +715,6 @@ async function switchToTab(tabId: number) {
   if (tabWindow.windowId) {
     await browser.windows.update(tabWindow.windowId, { focused: true });
   }
-}
-
-// --- Formatting Functions ---
-function formatUrlsPlain(selectedTabs: TabItem[]): string {
-  return selectedTabs.map((tab) => tab.url).join('\n');
-}
-
-function formatUrlsMarkdown(selectedTabs: TabItem[]): string {
-  return selectedTabs.map((tab) => `[${tab.title}](${tab.url})`).join('\n');
-}
-
-function formatUrlsJson(selectedTabs: TabItem[]): string {
-  const data = selectedTabs.map((tab) => ({ title: tab.title, url: tab.url }));
-  return JSON.stringify(data, null, 2); // Pretty print JSON
 }
 
 // Copy text to clipboard
@@ -1201,19 +1172,6 @@ document.addEventListener('click', (e) => {
   }
 });
 
-function applyIndeterminateGroupStyle(element: HTMLElement) {
-  element.style.backgroundColor = 'theme("colors.indigo.500")';
-  element.style.borderColor = 'theme("colors.indigo.500")';
-
-  element.classList.add('group-indeterminate');
-}
-
-function removeIndeterminateGroupStyle(element: HTMLElement) {
-  element.classList.remove('group-indeterminate');
-  element.style.backgroundColor = '';
-  element.style.borderColor = '';
-}
-
 // Function to control the enabled/disabled state of the Hide Pinned setting within the dropdown
 function updateHidePinnedVisibility() {
   if (hidePinnedSettingContainer && hidePinnedToggle && hidePinnedLabel) {
@@ -1319,4 +1277,26 @@ function updateToggleVisuals(
     toggleButton.classList.add('dark:bg-neutral-700');
     toggleSpan?.classList.replace('translate-x-4', 'translate-x-0');
   }
+}
+
+// Tooltip
+const archiveRestoreIcon = document.getElementById('archive-restore-icon');
+const archiveRestoreTooltip = document.getElementById(
+  'archive-restore-tooltip'
+);
+
+if (archiveRestoreIcon && archiveRestoreTooltip) {
+  archiveRestoreIcon.addEventListener('mouseenter', () => {
+    archiveRestoreTooltip.classList.remove('invisible');
+    archiveRestoreTooltip.classList.add('visible');
+    archiveRestoreTooltip.classList.remove('opacity-0');
+    archiveRestoreTooltip.classList.add('opacity-100');
+  });
+
+  archiveRestoreIcon.addEventListener('mouseleave', () => {
+    archiveRestoreTooltip.classList.add('invisible');
+    archiveRestoreTooltip.classList.remove('visible');
+    archiveRestoreTooltip.classList.add('opacity-0');
+    archiveRestoreTooltip.classList.remove('opacity-100');
+  });
 }
