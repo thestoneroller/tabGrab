@@ -5,7 +5,7 @@ import { defineConfig } from 'wxt';
 // See https://wxt.dev/api/config.html
 export default defineConfig({
   manifest: {
-    permissions: ['tabs', 'storage'],
+    permissions: ['tabs', 'storage', 'activeTab'],
     browser_specific_settings: {
       gecko: {
         id: 'tab-grab@thestoneroller.com',

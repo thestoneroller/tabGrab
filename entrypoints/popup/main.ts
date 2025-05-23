@@ -136,6 +136,7 @@ async function loadTabs() {
     favIconUrl: tab.favIconUrl || '',
     selected: false,
     pinned: tab.pinned,
+    active: tab.active,
   }));
 
   // Apply current filters and render
@@ -398,12 +399,13 @@ function renderTabs() {
 // Helper function to create a single tab element (used by renderTabs)
 function createTabElement(tab: TabItem): HTMLDivElement {
   const tabElement = document.createElement('div');
+  const active: boolean = tab.active ? true : false;
   const baseClasses =
-    'flex items-center p-2 rounded-lg border transition-colors duration-200';
+    `flex items-center p-2 rounded-lg border transition-colors duration-200`;
   const selectedClasses =
-    'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-500/30 hover:bg-indigo-100 dark:hover:bg-indigo-800/50';
+    `bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-500/30 hover:bg-indigo-100 dark:hover:bg-indigo-800/50`;
   const defaultClasses =
-    'bg-white dark:bg-neutral-800/50 border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800';
+    `bg-white dark:bg-neutral-800/50 border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800`;
   tabElement.className = `${baseClasses} ${
     tab.selected ? selectedClasses : defaultClasses
   }`;
@@ -436,32 +438,6 @@ function createTabElement(tab: TabItem): HTMLDivElement {
     faviconHtml = faviconPlaceholder.outerHTML;
   }
 
-  // Pinned Icon logic (remains the same)
-  let pinnedIconHtml = '';
-  if (tab.pinned) {
-    // ... (pin icon creation) ...
-    const pinIcon = document.createElementNS(
-      'http://www.w3.org/2000/svg',
-      'svg'
-    );
-    pinIcon.setAttribute(
-      'class',
-      'w-3 h-3 ml-auto mr-1 text-neutral-500 dark:text-neutral-400 flex-shrink-0'
-    );
-    pinIcon.setAttribute('viewBox', '0 0 24 24');
-    pinIcon.setAttribute('fill', 'currentColor');
-    const pinPath = document.createElementNS(
-      'http://www.w3.org/2000/svg',
-      'path'
-    );
-    pinPath.setAttribute(
-      'd',
-      'M16 12V4h1V2H7v2h1v8l-2 3v2h6v4h2v-4h6v-2l-2-3z'
-    );
-    pinIcon.appendChild(pinPath);
-    pinnedIconHtml = pinIcon.outerHTML;
-  }
-
   // Checkbox (remains the same)
   const checkbox = document.createElement('input');
   checkbox.type = 'checkbox';
@@ -480,7 +456,7 @@ function createTabElement(tab: TabItem): HTMLDivElement {
   // Title element (remains the same, maybe adjust font size if needed)
   const titleElement = document.createElement('div');
   titleElement.className =
-    'text-sm truncate text-neutral-900 dark:text-neutral-100';
+    'text-sm truncate text-neutral-900 dark:text-neutral-100 flex gap-2 items-center';
   titleElement.title = tab.title;
   titleElement.textContent = tab.title;
 
@@ -539,20 +515,78 @@ function createTabElement(tab: TabItem): HTMLDivElement {
 
   tabElement.appendChild(titleContainer);
 
-  // Add Pinned Icon here
-  if (pinnedIconHtml) {
+  if (active) {
+    const eyeIcon = document.createElementNS(
+      'http://www.w3.org/2000/svg',
+      'svg'
+    );
+    eyeIcon.setAttribute('viewBox', '0 0 24 24');
+    eyeIcon.setAttribute('fill', 'none');
+    eyeIcon.setAttribute('stroke', 'currentColor');
+    eyeIcon.setAttribute('stroke-width', '2');
+    eyeIcon.setAttribute('stroke-linecap', 'round');
+    eyeIcon.setAttribute('stroke-linejoin', 'round');
+
+    const eyePath = document.createElementNS(
+      'http://www.w3.org/2000/svg',
+      'path'
+    );
+    eyePath.setAttribute(
+      'd',
+      'M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0'
+    );
+    eyeIcon.appendChild(eyePath);
+
+    const eyeCircle = document.createElementNS(
+      'http://www.w3.org/2000/svg',
+      'circle'
+    );
+    eyeCircle.setAttribute('cx', '12');
+    eyeCircle.setAttribute('cy', '12');
+    eyeCircle.setAttribute('r', '3');
+    eyeIcon.appendChild(eyeCircle);
+
+    const tempEyeDiv = document.createElement('div');
+    tempEyeDiv.className = 'ml-auto flex items-center w-fit h-fit';
+    tempEyeDiv.appendChild(eyeIcon);
+    tempEyeDiv.title = 'You are here';
+    const svgElement = tempEyeDiv.querySelector('svg');
+    svgElement?.setAttribute(
+      'class',
+      'w-4 h-4 mr-2 text-indigo-400 dark:text-indigo-400 flex-shrink-0'
+    );
+
+    if (tempEyeDiv.firstChild) tabElement.appendChild(tempEyeDiv.firstChild);
+  }
+
+
+  if (tab.pinned) {
+    const pinIcon = document.createElementNS(
+      'http://www.w3.org/2000/svg',
+      'svg'
+    );
+    pinIcon.setAttribute('viewBox', '0 0 24 24');
+    pinIcon.setAttribute('fill', 'currentColor');
+    const pinPath = document.createElementNS(
+      'http://www.w3.org/2000/svg',
+      'path'
+    );
+    pinPath.setAttribute(
+      'd',
+      'M16 12V4h1V2H7v2h1v8l-2 3v2h6v4h2v-4h6v-2l-2-3z'
+    );
+    pinIcon.appendChild(pinPath);
     const tempPinDiv = document.createElement('div');
     tempPinDiv.className = 'ml-auto flex items-center';
-    tempPinDiv.innerHTML = pinnedIconHtml;
+    tempPinDiv.appendChild(pinIcon);
     const svgElement = tempPinDiv.querySelector('svg');
     svgElement?.setAttribute(
       'class',
-      'w-3 h-3 mr-1 text-neutral-500 dark:text-neutral-400 flex-shrink-0'
+      'w-4 h-4 mr-2 text-neutral-500 dark:text-neutral-400 flex-shrink-0'
     );
-
     if (tempPinDiv.firstChild) tabElement.appendChild(tempPinDiv.firstChild);
   }
-
+  
   tabElement.appendChild(copyButton);
 
   return tabElement;

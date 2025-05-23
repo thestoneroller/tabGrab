@@ -5,4 +5,5 @@ interface TabItem {
   favIconUrl?: string;
   selected: boolean;
   pinned: boolean;
+  active?: boolean;
 }
