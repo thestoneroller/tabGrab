@@ -1,11 +1,17 @@
 import { FORMAT_PREFERENCE_KEY, THEME_PREFERENCE_KEY } from '@/constants';
 import { SETTINGS_STORAGE_KEY } from '@/constants';
-import { formatUrlsPlain, formatUrlsMarkdown, formatUrlsJson } from '@/utils';
+import {
+  formatUrlsPlain,
+  formatUrlsMarkdown,
+  formatUrlsJson,
+  formatUrlsCsv,
+  downloadFile,
+} from '@/utils';
 
 let tabs: TabItem[] = [];
 let filteredTabs: TabItem[] = [];
 let isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
-let selectedCopyFormat: 'plain' | 'markdown' | 'json' = 'plain';
+let selectedCopyFormat: 'plain' | 'markdown' | 'json' | 'csv' = 'plain';
 let lastClickedTabId: number | null = null;
 let shiftNotificationShown = false;
 let activeFilter: 'all' | 'pinned' = 'all';
@@ -518,7 +524,6 @@ function createTabElement(tab: TabItem): HTMLDivElement {
     if (tempEyeDiv.firstChild) tabElement.appendChild(tempEyeDiv.firstChild);
   }
 
-
   if (tab.pinned) {
     const pinIcon = document.createElementNS(
       'http://www.w3.org/2000/svg',
@@ -545,7 +550,7 @@ function createTabElement(tab: TabItem): HTMLDivElement {
     );
     if (tempPinDiv.firstChild) tabElement.appendChild(tempPinDiv.firstChild);
   }
-  
+
   tabElement.appendChild(copyButton);
 
   return tabElement;
@@ -832,6 +837,9 @@ function updateFormatMenuVisuals() {
     case 'json':
       buttonText = 'Copy JSON';
       break;
+    case 'csv':
+      buttonText = 'Export CSV';
+      break;
   }
   copyButtonText.textContent = buttonText;
 }
@@ -951,6 +959,13 @@ function setupEventListeners() {
         textToCopy = formatUrlsJson(selectedTabs);
         formatDesc = 'JSON';
         break;
+      case 'csv':
+        const csvContent = formatUrlsCsv(selectedTabs);
+        downloadFile(csvContent, 'tab-grab-export.csv', 'text/csv;charset=utf-8;');
+        showNotification('CSV file exported');
+        copyFormatMenu.classList.add('hidden');
+        copyFormatToggle.setAttribute('aria-expanded', 'false');
+        return; // Exit early as we are not copying to clipboard
       case 'plain':
       default:
         textToCopy = formatUrlsPlain(selectedTabs);
