@@ -18,9 +18,4 @@ export default defineConfig({
   vite: () => ({
     plugins: [tailwindcss() as any, obfuscator()],
   }),
-  webExt: {
-    binaries: {
-      firefox: 'firefoxdeveloperedition',
-    },
-  },
 });
