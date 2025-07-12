@@ -1,19 +1,17 @@
 import { FORMAT_PREFERENCE_KEY, THEME_PREFERENCE_KEY } from '@/constants';
 import { SETTINGS_STORAGE_KEY } from '@/constants';
 import { formatUrlsPlain, formatUrlsMarkdown, formatUrlsJson } from '@/utils';
-// State management
+
 let tabs: TabItem[] = [];
 let filteredTabs: TabItem[] = [];
 let isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
-let selectedCopyFormat: 'plain' | 'markdown' | 'json' = 'plain'; // Default format
-let lastClickedTabId: number | null = null; // Add this line
-let shiftNotificationShown = false; // Add this flag
-let activeFilter: 'all' | 'pinned' = 'all'; // Removed 'active' from filter types
-let isGroupingEnabled = false; // New state for grouping
-let isHidePinnedEnabled = false; // New state for hiding pinned tabs
-let formatPreference: 'plain' | 'markdown' | 'json' = 'plain';
+let selectedCopyFormat: 'plain' | 'markdown' | 'json' = 'plain';
+let lastClickedTabId: number | null = null;
+let shiftNotificationShown = false;
+let activeFilter: 'all' | 'pinned' = 'all';
+let isGroupingEnabled = false;
+let isHidePinnedEnabled = false;
 
-// DOM Elements
 const searchInput = document.getElementById('search-input') as HTMLInputElement;
 const tabsContainer = document.getElementById(
   'tabs-container'
@@ -34,7 +32,6 @@ const headerTabCountBadge = document.getElementById(
   'tab-count-badge'
 ) as HTMLSpanElement;
 
-// Hide Pinned Elements
 const hidePinnedSection = document.getElementById(
   'hide-pinned-section'
 ) as HTMLDivElement;
@@ -46,19 +43,18 @@ const groupDomainToggle = document.getElementById(
   'group-domain-toggle'
 ) as HTMLButtonElement;
 
-// Reverted Copy Button Elements
 const copySelectedBtn = document.getElementById(
   'copy-selected'
-) as HTMLButtonElement; // Main action button
+) as HTMLButtonElement;
 const copyFormatToggle = document.getElementById(
   'copy-format-toggle'
-) as HTMLButtonElement; // Dropdown toggle
+) as HTMLButtonElement;
 const copyFormatMenu = document.getElementById(
   'copy-format-menu'
-) as HTMLDivElement; // Dropdown menu
+) as HTMLDivElement;
 const copyButtonText = document.getElementById(
   'copy-button-text'
-) as HTMLSpanElement; // Text inside main button
+) as HTMLSpanElement;
 
 // Filter Buttons & Counts
 const filterButtonAll = document.getElementById(
@@ -90,33 +86,23 @@ async function init() {
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
   isDarkMode = prefersDark;
 
-  // Load theme preference first
   await loadThemePreference();
-  // If isDarkMode is still its default (system preference), and a theme preference was loaded, use that.
-  // Otherwise, setTheme will use the system preference or the loaded preference.
   setTheme(isDarkMode);
 
-  // Load settings first
   await loadFilterSettings();
-  await loadFormatPreference(); // Load format preference
+  await loadFormatPreference();
 
-  // Load tabs
   await loadTabs();
 
-  // Update counts initially
   updateFilterCounts();
   updateHeaderCount();
   applyFilterStyles();
-  updateFormatMenuVisuals(); // Restore dropdown visual update
+  updateFormatMenuVisuals();
 
-  // Apply initial state to toggles based on loaded settings
   updateToggleVisuals(groupDomainToggle, isGroupingEnabled);
   updateToggleVisuals(hidePinnedToggle, isHidePinnedEnabled);
 
-  // Set up event listeners
   setupEventListeners();
-
-  // Check if browser is Firefox and update feedback link
   if (navigator.userAgent.includes('Firefox')) {
     if (feedbackButton) {
       feedbackButton.href =
@@ -139,17 +125,13 @@ async function loadTabs() {
     active: tab.active,
   }));
 
-  // Apply current filters and render
   applyFiltersAndRender();
 
-  // Update counts based on the *full* tab list
   updateFilterCounts();
   updateHeaderCount();
 
-  // Update selection states based on potentially filtered view
   updateSelectionCount();
   updateSelectAllCheckbox();
-  // Initial visibility update for hide-pinned section
   updateHidePinnedVisibility();
 }
 
@@ -315,13 +297,12 @@ function renderTabs() {
   if (isGroupingEnabled) {
     const groupedTabs: { [domain: string]: TabItem[] } = {};
 
-    // 1. Group tabs by domain
     filteredTabs.forEach((tab) => {
-      let domain = 'Other'; // Default group
+      let domain = 'Other';
       try {
         const url = new URL(tab.url);
         if (url.hostname) {
-          domain = url.hostname.replace(/^www\./i, ''); // Clean domain
+          domain = url.hostname.replace(/^www\./i, '');
         }
       } catch (e) {
         console.warn(`Could not parse URL for grouping: ${tab.url}`);
@@ -332,63 +313,52 @@ function renderTabs() {
       groupedTabs[domain].push(tab);
     });
 
-    // 2. Sort domains alphabetically
     const sortedDomains = Object.keys(groupedTabs).sort();
 
-    // 3. Render grouped tabs
     sortedDomains.forEach((domain) => {
       const tabsInGroup = groupedTabs[domain];
       const selectedInGroup = tabsInGroup.filter((t) => t.selected).length;
       const allSelectedInGroup = selectedInGroup === tabsInGroup.length;
       const someSelectedInGroup = selectedInGroup > 0 && !allSelectedInGroup;
 
-      // Create Group Header Div (now flex)
       const groupHeader = document.createElement('div');
       groupHeader.className =
         'flex items-center gap-2 text-xs font-semibold text-neutral-500 dark:text-neutral-400 pt-1 pb-2 px-2 sticky top-0 bg-white dark:bg-neutral-900 z-10';
 
-      // --- Create Group Checkbox ---
       const groupCheckbox = document.createElement('input');
       groupCheckbox.type = 'checkbox';
-      groupCheckbox.className = 'sr-only group-checkbox-input peer'; // Added class for listener targeting
+      groupCheckbox.className = 'sr-only group-checkbox-input peer';
       groupCheckbox.checked = allSelectedInGroup;
       groupCheckbox.indeterminate = someSelectedInGroup;
-      groupCheckbox.dataset.domain = domain; // Store domain
+      groupCheckbox.dataset.domain = domain;
 
       const groupCheckboxVisual = document.createElement('div');
-      // Base classes similar to other checkboxes, add group-specific class
       groupCheckboxVisual.className =
-        "group-checkbox-visual w-3.5 h-3.5 border-2 border-neutral-300 dark:border-neutral-600 rounded peer-checked:bg-indigo-500 peer-checked:border-indigo-500 relative peer-checked:after:content-[''] peer-checked:after:absolute peer-checked:after:left-[3px] peer-checked:after:top-[-1px] peer-checked:after:w-[4px] peer-checked:after:h-[8px] peer-checked:after:border-white peer-checked:after:border-r-2 peer-checked:after:border-b-2 peer-checked:after:rotate-45 cursor-pointer flex-shrink-0"; // Adjusted size/position slightly
-      groupCheckboxVisual.dataset.domain = domain; // Store domain for click listener
-      // Apply indeterminate style if necessary
+        "group-checkbox-visual w-3.5 h-3.5 border-2 border-neutral-300 dark:border-neutral-600 rounded peer-checked:bg-indigo-500 peer-checked:border-indigo-500 relative peer-checked:after:content-[''] peer-checked:after:absolute peer-checked:after:left-[3px] peer-checked:after:top-[-1px] peer-checked:after:w-[4px] peer-checked:after:h-[8px] peer-checked:after:border-white peer-checked:after:border-r-2 peer-checked:after:border-b-2 peer-checked:after:rotate-45 cursor-pointer flex-shrink-0";
+      groupCheckboxVisual.dataset.domain = domain;
       if (someSelectedInGroup) {
         groupCheckboxVisual.classList.add('indeterminate');
 
         groupCheckboxVisual.style.borderColor = 'var(--indigo-500)';
       }
 
-      // Create Domain Text Span
       const domainText = document.createElement('span');
       domainText.textContent = domain;
-      domainText.className = 'truncate'; // Allow truncation if needed
+      domainText.className = 'truncate';
 
-      // Append Checkbox and Text to Header
-      groupHeader.appendChild(groupCheckbox); // Hidden input
-      groupHeader.appendChild(groupCheckboxVisual); // Visual part
-      groupHeader.appendChild(domainText); // Domain name
+      groupHeader.appendChild(groupCheckbox);
+      groupHeader.appendChild(groupCheckboxVisual);
+      groupHeader.appendChild(domainText);
 
       tabsContainer.appendChild(groupHeader);
-
-      // Render tabs within the group
       tabsInGroup.forEach((tab) => {
-        const tabElement = createTabElement(tab); // Use helper function
+        const tabElement = createTabElement(tab);
         tabsContainer.appendChild(tabElement);
       });
     });
   } else {
-    // --- Render Ungrouped Tabs ---
     filteredTabs.forEach((tab) => {
-      const tabElement = createTabElement(tab); // Use helper function
+      const tabElement = createTabElement(tab);
       tabsContainer.appendChild(tabElement);
     });
   }
@@ -411,17 +381,14 @@ function createTabElement(tab: TabItem): HTMLDivElement {
   }`;
   tabElement.dataset.tabId = tab.id.toString();
 
-  // Favicon placeholder logic (remains the same)
   let faviconHtml = '';
   if (tab.favIconUrl) {
-    // ... (favicon img creation) ...
     const faviconImg = document.createElement('img');
-    faviconImg.className = 'w-4 h-4 mx-2 rounded object-contain flex-shrink-0'; // Adjusted margin
+    faviconImg.className = 'w-4 h-4 mx-2 rounded object-contain flex-shrink-0';
     faviconImg.src = tab.favIconUrl;
     faviconImg.alt = '';
     faviconHtml = faviconImg.outerHTML;
   } else {
-    // ... (placeholder creation, using indigo) ...
     let firstLetter = 'T';
     try {
       const url = new URL(tab.url);
@@ -433,34 +400,29 @@ function createTabElement(tab: TabItem): HTMLDivElement {
     }
     const faviconPlaceholder = document.createElement('div');
     faviconPlaceholder.className =
-      'w-4 h-4 ml-1 mr-2 rounded flex items-center justify-center bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 text-xs font-bold flex-shrink-0'; // Adjusted margin
+      'w-4 h-4 ml-1 mr-2 rounded flex items-center justify-center bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 text-xs font-bold flex-shrink-0';
     faviconPlaceholder.textContent = firstLetter;
     faviconHtml = faviconPlaceholder.outerHTML;
   }
 
-  // Checkbox (remains the same)
   const checkbox = document.createElement('input');
   checkbox.type = 'checkbox';
   checkbox.className = 'sr-only peer';
   checkbox.checked = tab.selected;
 
-  // Checkbox visual element (remains the same, ensure class matches HTML)
   const checkboxVisual = document.createElement('div');
   checkboxVisual.className =
     "w-4 h-4 border-2 border-neutral-300 dark:border-neutral-700 rounded peer-checked:bg-indigo-500 peer-checked:border-indigo-500 relative peer-checked:after:content-[''] peer-checked:after:absolute peer-checked:after:left-[4px] peer-checked:after:top-[0px] peer-checked:after:w-[5px] peer-checked:after:h-[9px] peer-checked:after:border-white peer-checked:after:border-r-2 peer-checked:after:border-b-2 peer-checked:after:rotate-45 cursor-pointer flex-shrink-0";
 
-  // Title container (remains the same)
   const titleContainer = document.createElement('div');
   titleContainer.className = 'flex-1 min-w-0 mr-2';
 
-  // Title element (remains the same, maybe adjust font size if needed)
   const titleElement = document.createElement('div');
   titleElement.className =
     'text-sm truncate text-neutral-900 dark:text-neutral-100 flex gap-2 items-center';
   titleElement.title = tab.title;
   titleElement.textContent = tab.title;
 
-  // URL element (remains the same)
   const urlElement = document.createElement('div');
   urlElement.className =
     'text-xs text-neutral-500 dark:text-neutral-400/60 truncate';
@@ -472,12 +434,10 @@ function createTabElement(tab: TabItem): HTMLDivElement {
   titleContainer.appendChild(titleElement);
   titleContainer.appendChild(urlElement);
 
-  // Copy button (remains the same)
   const copyButton = document.createElement('button');
   copyButton.className =
     'p-1 text-neutral-500 dark:text-neutral-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded transition-colors duration-200 cursor-pointer flex-shrink-0';
   copyButton.title = 'Copy URL';
-  // ... (SVG creation for copy button) ...
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.setAttribute('viewBox', '0 0 24 24');
   svg.setAttribute('class', 'w-4 h-4');
@@ -502,7 +462,6 @@ function createTabElement(tab: TabItem): HTMLDivElement {
   svg.appendChild(path);
   copyButton.appendChild(svg);
 
-  // --- Assemble Tab Element --- Order matters for layout
   tabElement.appendChild(checkbox);
   tabElement.appendChild(checkboxVisual);
 
@@ -599,7 +558,6 @@ function updateSelectionCount() {
   updateActionButtons();
 }
 
-// Update select all checkbox state (including visual representation)
 function updateSelectAllCheckbox() {
   if (!selectAllCheckbox || !selectAllVisual) {
     console.error('Select All checkbox or visual element not found');
@@ -614,10 +572,8 @@ function updateSelectAllCheckbox() {
     return;
   }
 
-  // Count selected tabs within the *currently filtered* list
   const selectedInFiltered = filteredTabs.filter((tab) => tab.selected).length;
 
-  // --- Set state ---
   if (selectedInFiltered === 0) {
     selectAllCheckbox.checked = false;
     selectAllCheckbox.indeterminate = false;
@@ -632,19 +588,13 @@ function updateSelectAllCheckbox() {
   }
 }
 
-// Toggle select all tabs
 function toggleSelectAll() {
-  // State is determined *after* the click changes selectAllCheckbox.checked
   const shouldSelect = selectAllCheckbox.checked;
-
-  // Apply the new state to all *currently filtered* tabs
   filteredTabs.forEach((filteredTab) => {
     const tabIndex = tabs.findIndex((t) => t.id === filteredTab.id);
     if (tabIndex !== -1) {
-      // Update the main tabs array
       tabs[tabIndex].selected = shouldSelect;
     }
-    // Update the filteredTabs array directly for render consistency
     filteredTab.selected = shouldSelect;
   });
 
@@ -653,28 +603,23 @@ function toggleSelectAll() {
   updateSelectAllCheckbox();
 }
 
-// Helper for single tab toggle logic (extracted for clarity)
 function performSingleToggle(mainIndex: number, filteredIndex: number) {
   const currentSelectedCount = tabs.filter((tab) => tab.selected).length;
-  const isSelecting = !tabs[mainIndex].selected; // Are we trying to select this tab?
+  const isSelecting = !tabs[mainIndex].selected;
 
-  // Check if selecting the 4th+ tab AND notification hasn't been shown yet
   if (isSelecting && currentSelectedCount >= 3 && !shiftNotificationShown) {
     showNotification(
-      'Tip: Use Shift+Click to select a range of tabs quickly.' // Changed message slightly
+      'Tip: Use Shift+Click to select a range of tabs quickly.'
     );
     shiftNotificationShown = true;
   }
 
-  // Toggle selection in the main array
   tabs[mainIndex].selected = !tabs[mainIndex].selected;
 
-  // Update the corresponding tab in filteredTabs if it exists
   if (filteredIndex !== -1) {
     filteredTabs[filteredIndex].selected = tabs[mainIndex].selected;
   }
 
-  // Update only the specific item's visuals
   const tabElement = tabsContainer.querySelector(
     `[data-tab-id="${tabs[mainIndex].id}"]`
   );
@@ -683,9 +628,8 @@ function performSingleToggle(mainIndex: number, filteredIndex: number) {
   ) as HTMLInputElement | null;
   if (tabElement && checkboxInput) {
     const isSelected = tabs[mainIndex].selected;
-    checkboxInput.checked = isSelected; // Update hidden input state
+    checkboxInput.checked = isSelected;
 
-    // Update visual classes on the tab element
     const baseClasses =
       'flex items-center p-2 rounded-xl border transition-colors duration-200';
     const selectedClasses =
@@ -703,12 +647,11 @@ function performSingleToggle(mainIndex: number, filteredIndex: number) {
   }
 }
 
-// Toggle individual tab selection or range selection with Shift
 function toggleTabSelection(tabId: number, shiftKey: boolean) {
   const currentTabIndexInFiltered = filteredTabs.findIndex(
     (t) => t.id === tabId
   );
-  if (currentTabIndexInFiltered === -1) return; // Clicked tab not in filtered list
+  if (currentTabIndexInFiltered === -1) return;
 
   const mainTabIndex = tabs.findIndex((t) => t.id === tabId);
   if (mainTabIndex === -1) return;
@@ -757,7 +700,6 @@ function toggleTabSelection(tabId: number, shiftKey: boolean) {
   updateSelectAllCheckbox();
 }
 
-// Switch to a tab
 async function switchToTab(tabId: number) {
   await browser.tabs.update(tabId, { active: true });
   const tabWindow = await browser.tabs.get(tabId);
@@ -777,7 +719,6 @@ async function copyToClipboard(text: string) {
   }
 }
 
-// Show notification
 function showNotification(message: string) {
   let notification = document.querySelector('.notification') as HTMLDivElement;
 
@@ -787,13 +728,10 @@ function showNotification(message: string) {
   }
 
   notification = document.createElement('div');
-  // Use neutral-800 for dark background, indigo-500 for light background
   notification.className =
     'notification fixed bottom-16 border-2 border-indigo-500 w-full max-w-[356px] left-1/2 transform -translate-x-1/2 backdrop-blur-sm bg-indigo-500 dark:bg-indigo-800/50 text-white dark:text-neutral-100 px-4 py-2 rounded-xl shadow-lg flex items-center gap-2 opacity-0 transition-all duration-300 ease-out z-50 text-sm';
 
   const checkIcon = document.createElement('span');
-  // Ensure icon stroke contrasts with background
-  // Create SVG element programmatically
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.setAttribute('viewBox', '0 0 24 24');
   svg.setAttribute('width', '16');
@@ -811,23 +749,19 @@ function showNotification(message: string) {
   );
   polyline.setAttribute('points', '20 6 9 17 4 12');
 
-  // Append polyline to SVG
   svg.appendChild(polyline);
 
-  // Append SVG to checkIcon
   checkIcon.appendChild(svg);
 
   notification.appendChild(checkIcon);
   notification.appendChild(document.createTextNode(message));
   document.body.appendChild(notification);
 
-  // Trigger reflow to apply initial state for transition
   void notification.offsetWidth;
 
-  // Show notification with animation
   requestAnimationFrame(() => {
     notification.classList.remove('opacity-0');
-    notification.classList.add('opacity-100', 'translate-y-[-10px]'); // Adjust translate Y if needed
+    notification.classList.add('opacity-100', 'translate-y-[-10px]');
   });
 
   // Hide notification after 2 seconds
@@ -842,7 +776,6 @@ function showNotification(message: string) {
   }, 2000);
 }
 
-// Update action buttons state
 function updateActionButtons() {
   const hasSelectedTabs = tabs.some((tab) => tab.selected);
   copySelectedBtn.disabled = !hasSelectedTabs;
@@ -878,7 +811,6 @@ function updateFormatMenuVisuals() {
     ) as HTMLElement | null;
     const itemFormat = item.getAttribute('data-format');
 
-    // Define selected background classes (matching neutral hover state from HTML)
     const selectedBgClasses = ['bg-neutral-100', 'dark:bg-neutral-700/50'];
 
     if (checkmark) {
@@ -892,8 +824,7 @@ function updateFormatMenuVisuals() {
     }
   });
 
-  // Update main button text
-  let buttonText = 'Copy URLs'; // Default
+  let buttonText = 'Copy URLs';
   switch (selectedCopyFormat) {
     case 'markdown':
       buttonText = 'Copy Markdown';
@@ -907,7 +838,6 @@ function updateFormatMenuVisuals() {
 
 // Set up all event listeners
 function setupEventListeners() {
-  // Search input
   searchInput.addEventListener('input', () => {
     applyFiltersAndRender();
   });
@@ -953,7 +883,6 @@ function setupEventListeners() {
     applyFiltersAndRender();
   });
 
-  // --- Copy Format Dropdown Logic --- (Restored)
   copyFormatToggle.addEventListener('click', (e) => {
     e.stopPropagation();
     const isExpanded =
@@ -973,21 +902,19 @@ function setupEventListeners() {
 
       if (format !== selectedCopyFormat) {
         selectedCopyFormat = format;
-        updateFormatMenuVisuals(); // Update visuals (checkmark, highlight, button text)
-        await saveFormatPreference(); // Save the newly selected format
+        updateFormatMenuVisuals();
+        await saveFormatPreference();
       }
 
-      // Hide menu
       copyFormatMenu.classList.add('hidden');
       copyFormatToggle.setAttribute('aria-expanded', 'false');
     }
   });
 
-  // Close dropdown if clicking outside
   document.addEventListener('click', (e) => {
     if (
-      copyFormatToggle && // Check if toggle exists
-      copyFormatMenu && // Check if menu exists
+      copyFormatToggle &&
+      copyFormatMenu &&
       !copyFormatToggle.contains(e.target as Node) &&
       !copyFormatMenu.contains(e.target as Node)
     ) {
@@ -995,12 +922,10 @@ function setupEventListeners() {
       copyFormatToggle.setAttribute('aria-expanded', 'false');
     }
   });
-  // --- End Copy Format Dropdown Logic ---
 
-  // --- Filter Dropdown Logic ---
   if (filterButton && filterMenu) {
     filterButton.addEventListener('click', (e) => {
-      e.stopPropagation(); // Prevent click from immediately closing the menu
+      e.stopPropagation();
       filterMenu.classList.toggle('hidden');
       const isExpanded = !filterMenu.classList.contains('hidden');
       filterButton.setAttribute('aria-expanded', String(isExpanded));
@@ -1041,16 +966,13 @@ function setupEventListeners() {
       showNotification(`Failed to copy ${formatDesc}`);
     }
 
-    // Hide dropdown after copying
     copyFormatMenu.classList.add('hidden');
     copyFormatToggle.setAttribute('aria-expanded', 'false');
   });
 
-  // Tab container delegation (Clicking on tabs, copy icons)
   tabsContainer.addEventListener('click', async (e) => {
     const target = e.target as HTMLElement;
 
-    // --- Handle Group Checkbox Click ---
     const groupVisualCheckbox = target.closest('.group-checkbox-visual');
     if (
       groupVisualCheckbox &&
@@ -1062,8 +984,6 @@ function setupEventListeners() {
       ) as HTMLInputElement | null;
 
       if (groupInputElement) {
-        // Determine if we should select all (true) or deselect all (false)
-        // If it's currently checked, we deselect. Otherwise (unchecked or indeterminate), we select.
         const shouldSelect =
           !groupInputElement.checked || groupInputElement.indeterminate;
 
@@ -1086,44 +1006,38 @@ function setupEventListeners() {
         });
 
         if (changed) {
-          applyFiltersAndRender(); // Re-render everything to update states
+          applyFiltersAndRender();
           updateSelectionCount();
           updateSelectAllCheckbox();
         }
       }
-      return; // Don't process further tab clicks
+      return;
     }
 
-    // --- Existing Tab Item Click Logic ---
     const tabItem = target.closest('[data-tab-id]') as HTMLElement;
     if (!tabItem) return;
 
     const tabId = parseInt(tabItem.dataset.tabId || '0', 10);
     if (!tabId) return;
 
-    // Handle individual tab checkbox click
     if (
-      target.matches('input[type="checkbox"]:not(.group-checkbox-input)') || // Exclude group inputs
-      target.matches('.w-4.h-4.border-2') // Target the visual checkbox div for individual tabs
+      target.matches('input[type="checkbox"]:not(.group-checkbox-input)') ||
+      target.matches('.w-4.h-4.border-2')
     ) {
       toggleTabSelection(tabId, e.shiftKey);
-      return; // Prevent any further action like switching
+      return;
     }
 
-    // Handle copy button click
     const copyButton = target.closest(
       'button[title="Copy URL"]'
     ) as HTMLButtonElement | null;
 
     if (copyButton) {
-      // Check if the clicked element is the copy button or inside it
       const tab = tabs.find((t) => t.id === tabId);
       if (tab) {
         try {
           await copyToClipboard(tab.url);
-          // --- Icon Swap Logic ---
-          const originalIconHTML = copyButton.innerHTML; // Store original SVG
-          // Create SVG element programmatically
+          const originalIconHTML = copyButton.innerHTML;
           const checkmarkSVG = document.createElementNS(
             'http://www.w3.org/2000/svg',
             'svg'
@@ -1136,37 +1050,30 @@ function setupEventListeners() {
           checkmarkSVG.setAttribute('stroke-linecap', 'round');
           checkmarkSVG.setAttribute('stroke-linejoin', 'round');
 
-          // Create polyline element
           const polyline = document.createElementNS(
             'http://www.w3.org/2000/svg',
-
             'polyline'
           );
           polyline.setAttribute('points', '20 6 9 17 4 12');
-
-          // Append polyline to SVG
           checkmarkSVG.appendChild(polyline);
-          copyButton.innerHTML = checkmarkSVG.outerHTML; // Show checkmark
-          copyButton.disabled = true; // Briefly disable button
+          copyButton.innerHTML = checkmarkSVG.outerHTML;
+          copyButton.disabled = true;
 
-          // Restore the icon after a delay
           setTimeout(() => {
             if (copyButton) {
-              // Check if button still exists
-              copyButton.innerHTML = originalIconHTML; // Restore original SVG
-              copyButton.disabled = false; // Re-enable button
+              copyButton.innerHTML = originalIconHTML;
+              copyButton.disabled = false;
             }
-          }, 1500); // 1.5 seconds delay
+          }, 1500);
         } catch (err) {
           console.error('Failed to copy URL:', err);
-          showNotification('Failed to copy URL'); // Show error notification
+          showNotification('Failed to copy URL');
         }
       }
-      return; // Prevent any further action like switching
+      return;
     }
   });
 
-  // Add context menu listener for switching tabs
   tabsContainer.addEventListener('contextmenu', (e) => {
     const target = e.target as HTMLElement;
     const tabItem = target.closest('[data-tab-id]') as HTMLElement;
@@ -1178,10 +1085,8 @@ function setupEventListeners() {
         switchToTab(tabId);
       }
     }
-    // If not clicking on a tab item, the default context menu will show as usual
   });
 
-  // Hide Pinned Toggle Listener
   if (hidePinnedToggle) {
     hidePinnedToggle.addEventListener('click', async () => {
       isHidePinnedEnabled = !isHidePinnedEnabled;
@@ -1209,7 +1114,7 @@ document.addEventListener('click', (e) => {
     filterButton.setAttribute('aria-expanded', 'false');
   }
 
-  // Close Copy Format Menu (Existing logic)
+  // Close Copy Format Menu
   if (
     copyFormatMenu &&
     copyFormatToggle &&
@@ -1226,7 +1131,6 @@ document.addEventListener('click', (e) => {
 function updateHidePinnedVisibility() {
   if (hidePinnedSettingContainer && hidePinnedToggle && hidePinnedLabel) {
     if (activeFilter === 'all') {
-      // Enable the setting
       hidePinnedSettingContainer.classList.remove(
         'opacity-50',
         'pointer-events-none'
@@ -1242,7 +1146,6 @@ function updateHidePinnedVisibility() {
       hidePinnedToggle.classList.remove('opacity-30');
       hidePinnedLabel.classList.add('cursor-pointer');
     } else {
-      // Disable the setting
       hidePinnedSettingContainer.classList.add(
         'opacity-50',
         'pointer-events-none'
@@ -1293,7 +1196,6 @@ async function saveFilterSettings() {
   }
 }
 
-// New function to load format preference
 async function loadFormatPreference() {
   const storedPreference = await browser.storage.local.get(
     FORMAT_PREFERENCE_KEY
@@ -1303,7 +1205,7 @@ async function loadFormatPreference() {
   }
 }
 
-// New function to save format preference
+// Function to save format preference
 async function saveFormatPreference() {
   await browser.storage.local.set({
     [FORMAT_PREFERENCE_KEY]: selectedCopyFormat,
@@ -1351,7 +1253,7 @@ if (archiveRestoreIcon && archiveRestoreTooltip) {
   });
 }
 
-// --- Load Theme Preference ---
+// Function to load theme preference
 async function loadThemePreference() {
   try {
     const result = await browser.storage.local.get(THEME_PREFERENCE_KEY);
@@ -1360,14 +1262,13 @@ async function loadThemePreference() {
       // Check if a theme was explicitly saved
       isDarkMode = savedTheme;
     }
-    // If no theme saved, isDarkMode retains its system-preference-based value set in init()
   } catch (error) {
     console.error('Error loading theme preference:', error);
     // Keep default (system preference) if loading fails
   }
 }
 
-// --- Save Theme Preference ---
+// Function to save theme preference
 async function saveThemePreference() {
   try {
     await browser.storage.local.set({ [THEME_PREFERENCE_KEY]: isDarkMode });
