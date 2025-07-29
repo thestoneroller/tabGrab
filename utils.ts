@@ -1,6 +1,6 @@
 // --- Formatting Functions ---
 export function formatUrlsPlain(selectedTabs: TabItem[]): string {
-  return selectedTabs.map((tab) => tab.url).join('\n');
+  return selectedTabs.map((tab) => `${tab.title} - ${tab.url}`).join('\n');
 }
 
 export function formatUrlsMarkdown(selectedTabs: TabItem[]): string {
