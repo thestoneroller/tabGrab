@@ -1,5 +1,4 @@
-import { FORMAT_PREFERENCE_KEY, THEME_PREFERENCE_KEY } from '@/constants';
-import { SETTINGS_STORAGE_KEY } from '@/constants';
+import { CLIPBOARD_SETTINGS_STORAGE_KEY, FORMAT_PREFERENCE_KEY, POPUP_SETTINGS_STORAGE_KEY, THEME_PREFERENCE_KEY } from '@/constants';
 import {
   formatUrlsPlain,
   formatUrlsMarkdown,
@@ -7,6 +6,7 @@ import {
   formatUrlsCsv,
   downloadFile,
 } from '@/utils';
+import { updateToggleVisuals } from '@/utils';
 
 let tabs: TabItem[] = [];
 let filteredTabs: TabItem[] = [];
@@ -17,6 +17,9 @@ let shiftNotificationShown = false;
 let activeFilter: 'all' | 'pinned' = 'all';
 let isGroupingEnabled = false;
 let isHidePinnedEnabled = false;
+let clipboardSettings: ClipboardSettings = {
+  copyTitleEnabled: false,
+};
 
 const searchInput = document.getElementById('search-input') as HTMLInputElement;
 const tabsContainer = document.getElementById(
@@ -38,9 +41,6 @@ const headerTabCountBadge = document.getElementById(
   'tab-count-badge'
 ) as HTMLSpanElement;
 
-const hidePinnedSection = document.getElementById(
-  'hide-pinned-section'
-) as HTMLDivElement;
 const hidePinnedToggle = document.getElementById(
   'hide-pinned-toggle'
 ) as HTMLButtonElement;
@@ -97,6 +97,7 @@ async function init() {
 
   await loadFilterSettings();
   await loadFormatPreference();
+  await loadClipboardSettings();
 
   await loadTabs();
 
@@ -968,7 +969,7 @@ function setupEventListeners() {
         return; // Exit early as we are not copying to clipboard
       case 'plain':
       default:
-        textToCopy = formatUrlsPlain(selectedTabs);
+        textToCopy = formatUrlsPlain(selectedTabs, clipboardSettings);
         formatDesc = 'URLs';
         break;
     }
@@ -1184,8 +1185,8 @@ function updateHidePinnedVisibility() {
 // --- Settings Persistence ---
 async function loadFilterSettings() {
   try {
-    const result = await browser.storage.local.get(SETTINGS_STORAGE_KEY);
-    const savedSettings = result[SETTINGS_STORAGE_KEY];
+    const result = await browser.storage.local.get(POPUP_SETTINGS_STORAGE_KEY);
+    const savedSettings = result[POPUP_SETTINGS_STORAGE_KEY];
     if (savedSettings) {
       activeFilter = savedSettings.activeFilter ?? 'all';
       isGroupingEnabled = savedSettings.isGroupingEnabled ?? false;
@@ -1198,14 +1199,28 @@ async function loadFilterSettings() {
   }
 }
 
+async function loadClipboardSettings() {
+  try {
+    const result = await browser.storage.local.get(CLIPBOARD_SETTINGS_STORAGE_KEY);
+    const savedClipboardSettings = result[CLIPBOARD_SETTINGS_STORAGE_KEY];
+    if (savedClipboardSettings) {
+      clipboardSettings.copyTitleEnabled = savedClipboardSettings.copyTitleEnabled ?? false;
+    }
+    // If no settings saved or keys are missing, defaults are already set
+  } catch (error) {
+    console.error('Error loading clipboard settings:', error);
+    // Keep default settings if loading fails
+  }
+}
+
 async function saveFilterSettings() {
-  const settings = {
+  const settings: PopupSettings = {
     activeFilter,
     isGroupingEnabled,
     isHidePinnedEnabled,
   };
   try {
-    await browser.storage.local.set({ [SETTINGS_STORAGE_KEY]: settings });
+    await browser.storage.local.set({ [POPUP_SETTINGS_STORAGE_KEY]: settings });
   } catch (error) {
     console.error('Error saving filter settings:', error);
   }
@@ -1225,25 +1240,6 @@ async function saveFormatPreference() {
   await browser.storage.local.set({
     [FORMAT_PREFERENCE_KEY]: selectedCopyFormat,
   });
-}
-
-// Helper to update toggle visuals based on state
-function updateToggleVisuals(
-  toggleButton: HTMLButtonElement | null,
-  isEnabled: boolean
-) {
-  if (!toggleButton) return;
-  const toggleSpan = toggleButton.querySelector('span[aria-hidden="true"]');
-  toggleButton.setAttribute('aria-checked', String(isEnabled));
-  if (isEnabled) {
-    toggleButton.classList.replace('bg-neutral-200', 'bg-indigo-600');
-    toggleButton.classList.replace('dark:bg-neutral-700', 'bg-indigo-600');
-    toggleSpan?.classList.replace('translate-x-0', 'translate-x-4');
-  } else {
-    toggleButton.classList.replace('bg-indigo-600', 'bg-neutral-200');
-    toggleButton.classList.add('dark:bg-neutral-700');
-    toggleSpan?.classList.replace('translate-x-4', 'translate-x-0');
-  }
 }
 
 // Tooltip

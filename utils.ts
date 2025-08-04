@@ -1,6 +1,10 @@
 // --- Formatting Functions ---
-export function formatUrlsPlain(selectedTabs: TabItem[]): string {
-  return selectedTabs.map((tab) => `${tab.title} - ${tab.url}`).join('\n');
+export function formatUrlsPlain(
+  selectedTabs: TabItem[],
+  clipboardSettings: ClipboardSettings
+): string { 
+
+  return clipboardSettings?.copyTitleEnabled ? selectedTabs.map((tab) => `${tab.title} - ${tab.url}`).join('\n') : selectedTabs.map((tab) => `${tab.url}`).join('\n');
 }
 
 export function formatUrlsMarkdown(selectedTabs: TabItem[]): string {
@@ -12,7 +16,7 @@ export function formatUrlsJson(selectedTabs: TabItem[]): string {
     title: tab.title,
     url: tab.url,
   }));
-  return JSON.stringify(data, null, 2); // Pretty print JSON
+  return JSON.stringify(data, null, 2);
 }
 
 export function formatUrlsCsv(selectedTabs: TabItem[]): string {
@@ -23,14 +27,11 @@ export function formatUrlsCsv(selectedTabs: TabItem[]): string {
   const headers = ['title', 'url'];
   const csvRows = [];
 
-  // Add the header row
   csvRows.push(headers.join(','));
 
-  // Add the data rows
   for (const tab of selectedTabs) {
     const values = headers.map((header) => {
       const value = tab[header as keyof Pick<TabItem, 'title' | 'url'>] || '';
-      // Escape double quotes by doubling them, per CSV standard
       const escaped = ('' + value).replace(/"/g, '""');
       return `"${escaped}"`;
     });
@@ -54,5 +55,23 @@ export function downloadFile(
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  URL.revokeObjectURL(url); // Clean up to avoid memory leaks
+  URL.revokeObjectURL(url);
+}
+
+export function updateToggleVisuals(
+  toggleButton: HTMLButtonElement | null,
+  isEnabled: boolean
+) {
+  if (!toggleButton) return;
+  const toggleSpan = toggleButton.querySelector('span[aria-hidden="true"]');
+  toggleButton.setAttribute('aria-checked', String(isEnabled));
+  if (isEnabled) {
+    toggleButton.classList.replace('bg-neutral-200', 'bg-indigo-600');
+    toggleButton.classList.replace('dark:bg-neutral-700', 'bg-indigo-600');
+    toggleSpan?.classList.replace('translate-x-0', 'translate-x-4');
+  } else {
+    toggleButton.classList.replace('bg-indigo-600', 'bg-neutral-200');
+    toggleButton.classList.add('dark:bg-neutral-700');
+    toggleSpan?.classList.replace('translate-x-4', 'translate-x-0');
+  }
 }
