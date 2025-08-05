@@ -1,5 +1,6 @@
 import { CLIPBOARD_SETTINGS_STORAGE_KEY } from '../../constants';
 import { updateToggleVisuals } from '../../utils';
+import { highlightActiveLink } from '../../utils';
 
 const copyTitleToggle = document.getElementById(
   'copy-title-toggle'
@@ -15,6 +16,7 @@ async function init() {
 
   await loadOptionsSettings();
   setupEventListeners();
+  highlightActiveLink();
 }
 
 function setupEventListeners() {
