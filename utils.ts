@@ -75,3 +75,31 @@ export function updateToggleVisuals(
     toggleSpan?.classList.replace('translate-x-4', 'translate-x-0');
   }
 }
+
+export function highlightActiveLink() {
+  const currentPath = window.location.pathname;
+  const navLinks = document.querySelectorAll(
+    'header > div:nth-child(2) > a',
+  ) as NodeListOf<HTMLAnchorElement>;
+
+  navLinks.forEach((link) => {
+    const linkPath = link.getAttribute('href');
+    if (linkPath === currentPath) {
+      link.classList.remove('text-neutral-400');
+      link.classList.add('text-white');
+    } else {
+      link.classList.remove('text-white');
+      link.classList.add('text-neutral-400');
+    }
+  });
+}
+
+export function formatDate(dateStr: string) {
+  const date = new Date(dateStr);
+  date.setDate(date.getDate() + 1);
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
