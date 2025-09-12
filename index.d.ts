@@ -6,12 +6,14 @@ interface TabItem {
   selected: boolean;
   pinned: boolean;
   active?: boolean;
+  windowId?: number;
 }
 
 interface PopupSettings {
   activeFilter: 'all' | 'pinned';
   isGroupingEnabled: boolean;
   isHidePinnedEnabled: boolean;
+  currentWindowOnly: boolean;
 }
 
 interface OptionsSettings {
