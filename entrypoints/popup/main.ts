@@ -17,6 +17,8 @@ let shiftNotificationShown = false;
 let activeFilter: 'all' | 'pinned' = 'all';
 let isGroupingEnabled = false;
 let isHidePinnedEnabled = false;
+let currentWindowOnly = false;
+let currentWindowId: number;
 let clipboardSettings: ClipboardSettings = {
   copyTitleEnabled: false,
 };
@@ -47,6 +49,10 @@ const hidePinnedToggle = document.getElementById(
 
 const groupDomainToggle = document.getElementById(
   'group-domain-toggle'
+) as HTMLButtonElement;
+
+const currentWindowToggle = document.getElementById(
+  'current-window-toggle'
 ) as HTMLButtonElement;
 
 const copySelectedBtn = document.getElementById(
@@ -108,6 +114,7 @@ async function init() {
 
   updateToggleVisuals(groupDomainToggle, isGroupingEnabled);
   updateToggleVisuals(hidePinnedToggle, isHidePinnedEnabled);
+  updateToggleVisuals(currentWindowToggle, currentWindowOnly);
 
   setupEventListeners();
   if (navigator.userAgent.includes('Firefox')) {
@@ -120,7 +127,18 @@ async function init() {
 
 // Load all tabs from the browser
 async function loadTabs() {
-  const allTabs = await browser.tabs.query({});
+  // Get current window
+  const currentWindow = await browser.windows.getCurrent();
+  currentWindowId = currentWindow.id || 0;
+
+
+  let allTabs: TabItem[] = [];
+
+  if (currentWindowOnly) {
+    allTabs = await browser.tabs.query({ windowId: currentWindowId }) as TabItem[];
+  } else {
+    allTabs = await browser.tabs.query({}) as TabItem[];
+  }
 
   tabs = allTabs.map((tab) => ({
     id: tab.id || 0,
@@ -129,6 +147,7 @@ async function loadTabs() {
     favIconUrl: tab.favIconUrl || '',
     selected: false,
     pinned: tab.pinned,
+    windowId: tab.windowId,
     active: tab.active,
   }));
 
@@ -232,6 +251,7 @@ function applyFiltersAndRender() {
   } else {
     filteredTabs = [...baseFiltered];
   }
+
 
   renderTabs();
 
@@ -892,6 +912,14 @@ function setupEventListeners() {
     applyFiltersAndRender();
   });
 
+  // Current Window Toggle
+  currentWindowToggle.addEventListener('click', async () => {
+    currentWindowOnly = !currentWindowOnly;
+    updateToggleVisuals(currentWindowToggle, currentWindowOnly);
+    await saveFilterSettings();
+    await loadTabs(); // Reload tabs with new filter
+  });
+
   copyFormatToggle.addEventListener('click', (e) => {
     e.stopPropagation();
     const isExpanded =
@@ -1147,37 +1175,31 @@ document.addEventListener('click', (e) => {
 function updateHidePinnedVisibility() {
   if (hidePinnedSettingContainer && hidePinnedToggle && hidePinnedLabel) {
     if (activeFilter === 'all') {
+      // Enable the hide pinned setting
       hidePinnedSettingContainer.classList.remove(
         'opacity-50',
         'pointer-events-none'
       );
       hidePinnedToggle.disabled = false;
-      hidePinnedToggle.classList.remove('dark:bg-neutral-700');
-      hidePinnedToggle.classList.add('bg-indigo-600');
-      hidePinnedToggle
-        .querySelector('span[aria-hidden="true"]')
-        ?.classList.replace('translate-x-0', 'translate-x-4');
-      hidePinnedLabel.classList.remove('cursor-not-allowed');
-      hidePinnedLabel.classList.remove('opacity-30');
+      hidePinnedLabel.classList.remove('cursor-not-allowed', 'opacity-30');
       hidePinnedToggle.classList.remove('opacity-30');
       hidePinnedLabel.classList.add('cursor-pointer');
+      
+      // Update toggle visuals based on current state
+      updateToggleVisuals(hidePinnedToggle, isHidePinnedEnabled);
     } else {
+      // Disable the hide pinned setting
       hidePinnedSettingContainer.classList.add(
         'opacity-50',
         'pointer-events-none'
       );
       hidePinnedToggle.disabled = true;
-      hidePinnedToggle.setAttribute('aria-checked', 'false');
-      hidePinnedToggle.classList.replace('bg-indigo-600', 'bg-neutral-200');
-      hidePinnedToggle.classList.add('dark:bg-neutral-700');
-      hidePinnedToggle
-        .querySelector('span[aria-hidden="true"]')
-        ?.classList.replace('translate-x-4', 'translate-x-0');
-
-      hidePinnedLabel.classList.add('cursor-not-allowed');
-      hidePinnedLabel.classList.add('opacity-30');
+      hidePinnedLabel.classList.add('cursor-not-allowed', 'opacity-30');
       hidePinnedToggle.classList.add('opacity-30');
       hidePinnedLabel.classList.remove('cursor-pointer');
+      
+      // Force toggle to disabled state visually
+      updateToggleVisuals(hidePinnedToggle, false);
     }
   }
 }
@@ -1191,6 +1213,7 @@ async function loadFilterSettings() {
       activeFilter = savedSettings.activeFilter ?? 'all';
       isGroupingEnabled = savedSettings.isGroupingEnabled ?? false;
       isHidePinnedEnabled = savedSettings.isHidePinnedEnabled ?? false;
+      currentWindowOnly = savedSettings.currentWindowOnly ?? false;
     }
     // If no settings saved or keys are missing, defaults are already set
   } catch (error) {
@@ -1218,6 +1241,7 @@ async function saveFilterSettings() {
     activeFilter,
     isGroupingEnabled,
     isHidePinnedEnabled,
+    currentWindowOnly,
   };
   try {
     await browser.storage.local.set({ [POPUP_SETTINGS_STORAGE_KEY]: settings });

@@ -66,12 +66,12 @@ export function updateToggleVisuals(
   const toggleSpan = toggleButton.querySelector('span[aria-hidden="true"]');
   toggleButton.setAttribute('aria-checked', String(isEnabled));
   if (isEnabled) {
-    toggleButton.classList.replace('bg-neutral-200', 'bg-indigo-600');
-    toggleButton.classList.replace('dark:bg-neutral-700', 'bg-indigo-600');
+    toggleButton.classList.remove('bg-neutral-200', 'dark:bg-neutral-700');
+    toggleButton.classList.add('bg-indigo-600');
     toggleSpan?.classList.replace('translate-x-0', 'translate-x-4');
   } else {
-    toggleButton.classList.replace('bg-indigo-600', 'bg-neutral-200');
-    toggleButton.classList.add('dark:bg-neutral-700');
+    toggleButton.classList.remove('bg-indigo-600');
+    toggleButton.classList.add('bg-neutral-200', 'dark:bg-neutral-700');
     toggleSpan?.classList.replace('translate-x-4', 'translate-x-0');
   }
 }
