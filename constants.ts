@@ -7,6 +7,16 @@ export const THEME_PREFERENCE_KEY = "tabgrab_theme_preference";
 // Changelog
 export const CHANGELOGS = [
   {
+    version: "1.4.0",
+    date: "2025-09-14",
+    changes: {
+      features: [
+        "Toggle to show only current window tabs",
+      ],
+      fixes: [],
+    },
+  },
+  {
     version: "1.3.4",
     date: "2025-08-05",
     changes: {
