@@ -7,7 +7,7 @@ export const THEME_PREFERENCE_KEY = "tabgrab_theme_preference";
 // Changelog
 export const CHANGELOGS = [
   {
-    version: "1.3.5",
+    version: "1.4.1",
     date: "2025-09-14",
     changes: {
       features: [
