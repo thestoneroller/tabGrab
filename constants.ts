@@ -3,16 +3,27 @@ export const POPUP_SETTINGS_STORAGE_KEY = "tabgrab_filter_settings";
 export const CLIPBOARD_SETTINGS_STORAGE_KEY = "tabgrab_clipboard_settings";
 export const FORMAT_PREFERENCE_KEY = "tabgrab_format_preference";
 export const THEME_PREFERENCE_KEY = "tabgrab_theme_preference";
+export const FORMAT_TEMPLATES_STORAGE_KEY = "tabgrab_format_templates";
+
+export const DEFAULT_FORMAT_TEMPLATES = {
+  plain: "{URL}",
+};
 
 // Changelog
 export const CHANGELOGS = [
   {
+    version: "1.5.0",
+    date: "2025-12-01",
+    changes: {
+      features: ["Added support for custom templates for copying plain urls"],
+      fixes: [],
+    },
+  },
+  {
     version: "1.4.1",
     date: "2025-09-14",
     changes: {
-      features: [
-        "Toggle to show only current window tabs",
-      ],
+      features: ["Toggle to show only current window tabs"],
       fixes: [],
     },
   },
